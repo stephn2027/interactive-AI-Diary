@@ -15,11 +15,9 @@ const ChatDescription: React.FC<ChatDescriptionProps> = ({ title, setting, speak
           {title}
         </Typography>
         <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-          <strong>Setting:</strong> {setting}
+           {setting}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
-          <strong>Speaker:</strong> {speaker}
-        </Typography>
+    
       </Paper>
     </Box>
   );

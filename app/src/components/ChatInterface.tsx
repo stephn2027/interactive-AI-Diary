@@ -9,8 +9,12 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  SelectChangeEvent,
+  MenuItem,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
+import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
 import { Message, Conversation, Dialogue } from '../util/types';
@@ -26,13 +30,18 @@ const ChatInterface: React.FC = () => {
   const [showHint, setShowHint] = useState<boolean>(false);
   const [currentInput, setCurrentInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<string>(conversations[0]?.id || '');
+  const [selectedConversationId, setSelectedConversationId] = useState<string>(
+    conversations[0]?.id || ''
+  );
+  const [userInputs, setUserInputs] = useState<string[]>([]);
 
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   // Select the current conversation
-  const selectedConversation = conversations.find(conv => conv.id === selectedConversationId);
+  const selectedConversation = conversations.find(
+    (conv) => conv.id === selectedConversationId
+  );
 
   // Destructure properties if conversation exists
   const { dialogue, title, setting, speaker } = selectedConversation || {};
@@ -45,7 +54,7 @@ const ChatInterface: React.FC = () => {
         id: firstSystemDialogue.id,
         role: firstSystemDialogue.role,
         content: firstSystemDialogue.content,
-        hint: firstSystemDialogue.hint || null
+        hint: firstSystemDialogue.hint || null,
       };
       setMessages([firstSystemMessage]);
       setCurrentDialogueIndex(0);
@@ -71,7 +80,7 @@ const ChatInterface: React.FC = () => {
   // Handler for sending a message
   const handleSendMessage = async () => {
     if (currentInput.trim() === '' || !selectedConversation) return;
-
+    const userMessageContent = currentInput.trim();
     // Append user's message
     const userMessage: Message = {
       id: Date.now(),
@@ -79,20 +88,24 @@ const ChatInterface: React.FC = () => {
       content: currentInput.trim(),
     };
     setMessages((prev) => [...prev, userMessage]);
+    if (currentDialogueIndex === 2) { // Start collecting after id:2
+      setUserInputs((prevInputs) => [...prevInputs, userMessageContent]);
+  }
     setCurrentInput('');
 
     // Proceed to the next system message within the same conversation
-    if ((currentDialogueIndex + 1) < selectedConversation.dialogue.length) {
+    if (currentDialogueIndex + 1 < selectedConversation.dialogue.length) {
       setLoading(true);
       // Simulate delay for system response
       setTimeout(() => {
-        const nextSystemDialogue = selectedConversation.dialogue[currentDialogueIndex + 1];
+        const nextSystemDialogue =
+          selectedConversation.dialogue[currentDialogueIndex + 1];
         if (nextSystemDialogue) {
           const systemMessage: Message = {
             id: nextSystemDialogue.id,
             role: nextSystemDialogue.role,
             content: nextSystemDialogue.content,
-            hint: nextSystemDialogue.hint || null
+            hint: nextSystemDialogue.hint || null,
           };
           setMessages((prev) => [...prev, systemMessage]);
           setCurrentDialogueIndex(currentDialogueIndex + 1);
@@ -106,7 +119,7 @@ const ChatInterface: React.FC = () => {
         id: Date.now(),
         role: 'System',
         content: "You've reached the end of the conversation. Thank you!",
-        hint: null
+        hint: null,
       };
       setMessages((prev) => [...prev, endMessage]);
     }
@@ -126,11 +139,16 @@ const ChatInterface: React.FC = () => {
   };
 
   // Handler to change conversation
-  const handleConversationChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleConversationChange = (
+    event: SelectChangeEvent<string>,
+    child: React.ReactNode
+  ) => {
     const newConversationId = event.target.value as string;
     setSelectedConversationId(newConversationId);
+    setUserInputs([]);
   };
-
+   console.log('usermessage: '+ userInputs);
+   const isInputDisabled = currentDialogueIndex === 3;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Chat Description */}
@@ -141,11 +159,13 @@ const ChatInterface: React.FC = () => {
           speaker={speaker || ''}
         />
       )}
-      
+
       {/* Conversation Selector */}
       <Box sx={{ mb: 2 }}>
         <FormControl fullWidth>
-          <InputLabel id="conversation-selector-label">Select Conversation</InputLabel>
+          <InputLabel id="conversation-selector-label">
+            Select Conversation
+          </InputLabel>
           <Select
             labelId="conversation-selector-label"
             value={selectedConversationId}
@@ -160,7 +180,7 @@ const ChatInterface: React.FC = () => {
           </Select>
         </FormControl>
       </Box>
-      
+
       {/* Messages Display */}
       <Box
         sx={{
@@ -182,61 +202,91 @@ const ChatInterface: React.FC = () => {
               id: Date.now(),
               role: 'System',
               content: 'Typing...',
-              hint: null
+              hint: null,
             }}
             isLoading={true}
           />
         )}
       </Box>
-      
+
       {/* Show Hint Button */}
-      {messages.length > 0 && messages[messages.length - 1].role === 'System' && messages[messages.length - 1].hint && !showHint && (
-        <Box sx={{ mt: 2 }}>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleShowHint}
-          >
-            Show Hint
-          </Button>
-        </Box>
-      )}
-      
+      {messages.length > 0 &&
+        messages[messages.length - 1].role === 'System' &&
+        messages[messages.length - 1].hint &&
+        !showHint && (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={handleShowHint}
+            >
+              Show Hint
+            </Button>
+          </Box>
+        )}
+
       {/* Display Hints */}
       {showHint && messages[messages.length - 1].hint && (
         <Box sx={{ mt: 2 }}>
           {messages[messages.length - 1].hint!.map((hint, index) => (
             <Typography key={index} variant="body2" color="textSecondary">
-              Hint {index + 1}: {hint}
+              {hint}
             </Typography>
           ))}
         </Box>
       )}
-      
+
       {/* Input Field and Send Button */}
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm={9}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type your message..."
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleSendMessage}
-            disabled={loading}
-          >
-            Send
-          </Button>
-        </Grid>
-      </Grid>
+       {/* Input Field with Inline Send Button */}
+       <Box sx={{ mt: 2 }}>
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Type your message..."
+                    value={currentInput}
+                    onChange={(e) => setCurrentInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    multiline
+                    minRows={1}
+                    maxRows={6} // Auto-resize up to 6 rows
+                    disabled={isInputDisabled || loading}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    color="primary"
+                                    onClick={handleSendMessage}
+                                    edge="end"
+                                    disabled={isInputDisabled || loading}
+                                    aria-label="send message"
+                                >
+                                    <SendIcon />
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                        // Optional: Add styles to remove borders or adjust padding
+                        sx: {
+                            backgroundColor: '#ffffff',
+                            borderRadius: '20px',
+                        },
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '20px',
+                        },
+                        // Adjust the padding to align with ChatGPT style
+                        '& .MuiInputBase-input': {
+                            paddingRight: '48px', // Space for the icon
+                        },
+                    }}
+                />
+                {/* Optionally, display a message when input is disabled */}
+                {isInputDisabled && (
+                    <Typography variant="caption" color="textSecondary" mt={1}>
+                        Please follow the prompts to continue the conversation.
+                    </Typography>
+                )}
+            </Box>
     </Box>
   );
 };

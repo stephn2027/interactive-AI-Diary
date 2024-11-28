@@ -12,7 +12,8 @@
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
-    "@mui/material": "^6.1.8",
+    "@mui/icons-material": "^6.1.9",
+    "@mui/material": "^6.1.9",
     "dayjs": "^1.11.13",
     "framer": "^2.4.1",
     "motion": "^11.11.17",
