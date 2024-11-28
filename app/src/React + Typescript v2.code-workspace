@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "../../../Typescript project/React + Typescript v2"
+		},
+		{
+			"path": "../../../conversation-insights"
+		},
+		{
+			"path": "../../../../NextJS Projects/portfolio"
+		},
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

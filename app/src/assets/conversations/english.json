@@ -1,0 +1,44 @@
+[
+    {
+    "id": "computerShopping",
+    "title": " Shopping and Evaluating Products",
+    "setting": "Shopping Experience",
+    "speaker": "User",
+    "dialogue": [
+      {
+        "id": 0,
+        "role": "System",
+        "content": "Let's brainstorm! First tell me what you want to buy?",
+        "hint": [
+          "What will you ask the staff?",
+          "How do you choose what you buy?",
+          "Example: What do you want to buy? I want to buy a computer. What will you ask the staff? Do you have a XYZ model computer? How do you choose what to buy? I choose a lightweight and fast computer."
+        ]
+      },
+      {
+        "id": 1,
+        "role": "System",
+        "content": "Great! Let's organize this into an outline. Please write the outline in 3 stages: Beginning, middle, end.",
+        "hint": [
+          "Beginning: \"Start of the outline\"",
+          "Middle: \"Middle outline\"",
+          "End: \"End of the outline\"."
+        ]
+      },
+      {
+        "id": 2,
+        "role": "System",
+        "content": "Perfect, let's turn this into a Draft!",
+        "hint": [
+          "Sample draft: akjsdhueh asdjk asklduioasd klasjdl k"
+        ]
+      },
+      {
+        "id": 3,
+        "role": "System",
+        "content": "Nice Work! Let's make a few changes.",
+        "hint": []
+      }
+    ]
+  }
+]
