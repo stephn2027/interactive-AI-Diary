@@ -259,6 +259,18 @@ const ChatInterface: React.FC = () => {
                                     edge="end"
                                     disabled={isInputDisabled || loading}
                                     aria-label="send message"
+                                    sx={{
+                                      margin:'0px',
+                                      backgroundColor: '#1a73e8', // Blue background
+                                      color: '#ffffff', // White icon
+                                      padding: '.3rem',
+                                      borderRadius: '50%',
+                                      transition: 'background-color 0.3s, transform 0.2s',
+                                      '&:hover': {
+                                          backgroundColor: '#1669bb', // Darker blue on hover
+                                          transform: 'translateY(-2px)', // Slightly move up on hover
+                                      },
+                                    }}
                                 >
                                     <SendIcon />
                                 </IconButton>
@@ -276,7 +288,7 @@ const ChatInterface: React.FC = () => {
                         },
                         // Adjust the padding to align with ChatGPT style
                         '& .MuiInputBase-input': {
-                            paddingRight: '48px', // Space for the icon
+                            paddingRight: '60px', // Space for the icon
                         },
                     }}
                 />

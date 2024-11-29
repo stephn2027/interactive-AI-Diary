@@ -5,7 +5,7 @@ org: innovativelearnings
 app: interactive-diary
 
 # Name of the service
-service: insights-app-backend
+service: interactive-diary-backend
 
 # Enables the use of a .env file for environment variables
 useDotenv: true
@@ -17,11 +17,11 @@ provider:
   runtime: nodejs18.x
   region: ${env:AWS_REGION_ID}  # Ensure AWS_REGION_ID is set in your .env file
   logRetentionInDays: 7
-  role: arn:aws:iam::105150981739:role/LambdaCloudWatchLogsRole
+  stage: ${opt:stage, 'dev'}
   environment:
     OPENAI_API_KEY: ${env:OPENAI_API_KEY}
     CREATOMATE_API_KEY: ${env:CREATOMATE_API_KEY}
-    S3_BUCKET_NAME: insights-app-assets-${env:AWS_REGION_ID}  # Ensure unique bucket name
+    S3_BUCKET_NAME: interactive-diary-assets-${env:AWS_REGION_ID}  # Ensure unique bucket name
     AWS_SDK_LOAD_CONFIG: 1
 
   iamRoleStatements:
@@ -58,23 +58,15 @@ httpApi:
       - DELETE
 
 functions:
-  romanize:
-    handler: romanize.handler
+  getFeedback:
+    handler: getFeedback.handler
     role: arn:aws:iam::105150981739:role/service-role/generateAudio
     events:
       - http:
           method: post
-          path: romanize
+          path: feedback
           cors: true
 
-  compileVideo:
-    handler: compileVideo.handler
-    role: arn:aws:iam::105150981739:role/service-role/generateAudio
-    events:
-      - http:
-          method: post
-          path: compilevideo
-          cors: true
 
 plugins:
   - serverless-plugin-common-excludes
