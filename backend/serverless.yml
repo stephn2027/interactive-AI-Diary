@@ -1,0 +1,94 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: innovativelearnings
+
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: interactive-diary
+
+# Name of the service
+service: interactive-diary-backend
+
+# Enables the use of a .env file for environment variables
+useDotenv: true
+
+provider:
+  name: aws
+  deploymentMethod: direct
+  profile: ilang
+  runtime: nodejs18.x
+  region: ${env:AWS_REGION_ID}  # Ensure AWS_REGION_ID is set in your .env file
+  logRetentionInDays: 7
+  stage: ${opt:stage, 'dev'}
+  environment:
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    CREATOMATE_API_KEY: ${env:CREATOMATE_API_KEY}
+    S3_BUCKET_NAME: interactive-diary-assets-${env:AWS_REGION_ID}  # Ensure unique bucket name
+    AWS_SDK_LOAD_CONFIG: 1
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "lambda:*"
+        - "lambda:InvokeFunction"
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+        - "s3:GetObject"
+        - "s3:PutObject"
+        - "comprehend:DetectSentiment"
+        - "comprehend:BatchDetectSentiment"
+        - "s3:ListBucket"
+      Resource:
+        - "arn:aws:logs:${env:AWS_REGION_ID}:*:*"
+        - "arn:aws:s3:::interactive-diary-assets-${env:AWS_REGION_ID}/*"
+        - "arn:aws:s3:::interactive-diary-assets-${env:AWS_REGION_ID}"
+        - "*" 
+
+httpApi:
+  cors:
+    allowedOrigins:
+      - 'https://your-frontend-domain.com'  # Replace with your actual frontend domain
+    allowedHeaders:
+      - Content-Type
+      - Authorization
+    allowedMethods:
+      - OPTIONS
+      - GET
+      - POST
+      - PUT
+      - DELETE
+
+functions:
+  getFeedback:
+    handler: getFeedback.handler
+    role: arn:aws:iam::105150981739:role/service-role/generateAudio
+    events:
+      - http:
+          method: post
+          path: feedback
+          cors: true
+
+
+plugins:
+  - serverless-plugin-common-excludes
+  - serverless-plugin-include-dependencies
+  # - serverless-offline
+  # - serverless-dotenv-plugin
+
+package:
+  individually: false
+  include:
+    - bin/**
+    - lib/**
+    - helpers/**
+    - src/**
+    - utils/**
+  exclude:
+    - node_modules/**
+    - .git/**
+    - tests/**
+    - images/characters/**
+    
+
+custom:
+  serverless-offline:
+    noTimeout: true
