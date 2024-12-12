@@ -1,19 +1,8 @@
-export type LanguageKey = "it" | "ko"|"ja"|"fr"|"zh"|'en';
 
-export type Retry = {
-  message: Message;
-  transcript: string | null;
-  feedback: string | undefined;
-  score: number | undefined;
-};
 
-export type Option = {
-  response: string;
-  cloze?: string;
-  romanized?: string;
-  romanizedCloze?: string;
-  nextIndex?: number | -1;
-};
+
+
+
 
 export interface Message {
   id: number;
@@ -22,19 +11,9 @@ export interface Message {
   romanized?: string;
   options?: Option[];
   hint?:string[]|null;
+  feedback?:Feedback|null;
 }
 
-export interface SummaryData {
-  pronunciationScore:number[];
-  fluencyScore:number[];
-  grammarScore:number[];
-  vocabularyScore:number[];
-  feedbackSummary:string[];
-  pronunciationLowScoreFeedbacks:string[],
-  fluencyLowScoreFeedbacks:string[],
-  grammarLowScoreFeedbacks:string[],
-  vocabularyLowScoreFeedbacks:string[],
-}
 
 export type ChatDescriptionProps = {
   role:string,
@@ -43,11 +22,6 @@ export type ChatDescriptionProps = {
     conversation: string,
 }
 
-
-export type LanguageConfig = {
-  speaker: string;
-  description: string;
-};
 
 export interface TranscriptObject {
   text: string;
@@ -66,4 +40,23 @@ export interface Dialogue {
   role: 'User' | 'System';
   content: string;
   hint?: string[]|null;
+}
+
+export interface FeedbackResponse {
+  feedback: {
+    'Coherence & Organization': string;
+    'Content': string;
+    'Structure': string;
+    // Add other feedback categories if necessary
+  };
+}
+
+export interface Feedback {
+  title: string;
+  items: FeedbackItem[];
+}
+
+export interface FeedbackItem {
+  category: string;
+  value: string;
 }

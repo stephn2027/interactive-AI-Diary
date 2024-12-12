@@ -5,11 +5,11 @@ export const handler = async (event) => {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*', // Adjust based on your CORS policy
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'OPTIONS, POST',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'OPTIONS, POST, GET, PUT,DELETE',
   };
-  
+
   const isValidData = (parsedEvent) => {
     const { draftText } = parsedEvent;
     return typeof draftText === 'string' && draftText.trim().length > 0;
@@ -29,8 +29,6 @@ export const handler = async (event) => {
     };
   }
 
-  
-
   if (!isValidData(parsedEvent)) {
     console.error('Draft text must be a non-empty string');
     return {
@@ -48,21 +46,25 @@ export const handler = async (event) => {
   const prompt = [
     {
       role: 'system',
-      content: `You are an expert writing teacher who provides detailed, constructive feedback and corrections to improve students' writing skills. Your feedback should be clear, supportive, and aimed at helping the student enhance their writing abilities.`,
+      content: `You are a friendly writing assistant helping beginner writers improve their drafts. Provide clear and simple feedback on the following three areas: Coherence & Organization, Content, and Structure. Use easy-to-understand language suitable for beginners and include examples to help illustrate your suggestions.`,
     },
     {
       role: 'user',
       content: `
-        Please provide feedback and corrections for the following draft. Ensure that your response is structured, comprehensive, and offers actionable insights.
+      I need help improving my writing. Please review my draft based on the categories below and provide simple, easy-to-understand feedback. For each category, include one or two actionable steps along with examples to help me improve my writing.
 
-        **User Draft:**
-        "${draftText}"
+      **User Draft:**
+      "${draftText}"
 
-        **Expected Response Format (JSON):**
-        {
-        "generalFeedback": "Your general feedback here.",
-        "detailedCorrections": "Specific corrections and suggestions here."
-        }`,
+      **Feedback Format (JSON):**
+      {
+        "feedback": {
+          "Coherence & Organization": "Your feedback here with examples.",
+          "Content": "Your feedback here with examples.",
+          "Structure": "Your feedback here with examples."
+        }
+      }
+      `,
     },
   ];
 
@@ -82,8 +84,10 @@ export const handler = async (event) => {
     );
 
     // Extracting the AI's response
-    const aiResponse = response.data.choices[0].message.content.trim();
-
+    let aiResponse = response.data.choices[0].message.content.trim();
+    if (aiResponse.startsWith('```') && aiResponse.endsWith('```')) {
+      aiResponse = aiResponse.replace(/^```(?:json)?\n?|```$/g, '');
+    }
     // Attempting to parse the response as JSON
     let formattedResponse;
     try {
@@ -92,9 +96,9 @@ export const handler = async (event) => {
     } catch (error) {
       console.error('Error parsing AI response:', error);
       // Fallback: Return the raw AI response if JSON parsing fails
+
       formattedResponse = {
-        generalFeedback: aiResponse,
-        detailedCorrections: 'Unable to parse detailed corrections.',
+        feedback: aiResponse,
       };
     }
 

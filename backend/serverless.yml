@@ -46,7 +46,7 @@ provider:
 httpApi:
   cors:
     allowedOrigins:
-      - 'https://your-frontend-domain.com'  # Replace with your actual frontend domain
+      - 'https://localhost:5173'  # Replace with your actual frontend domain
     allowedHeaders:
       - Content-Type
       - Authorization

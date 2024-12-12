@@ -1,7 +1,7 @@
 [
     {
     "id": "computerShopping",
-    "title": "Shopping and Evaluating Products",
+    "title": "Buying a Product",
     "setting": "Shopping Experience",
     "speaker": "User",
     "dialogue": [
@@ -23,13 +23,13 @@
         "hint": [
           "Beginning: Why were you at the store?",
           "Middle: What did you talk about with the staff",
-          "End: What did you choose?."
+          "End: What did you choose?"
         ]
       },
       {
         "id": 2,
         "role": "System",
-        "content": "Perfect, let's turn this into a Draft!",
+        "content": "Perfect! let's turn this into a Draft.",
         "hint": [
           "Sample draft: Yesterday, I went to …… I asked…..I chose…because….."
         ]

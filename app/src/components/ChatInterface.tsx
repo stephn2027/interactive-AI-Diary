@@ -15,10 +15,19 @@ import {
   IconButton,
   CircularProgress,
 } from '@mui/material';
+import ImageIcon from '@mui/icons-material/Image';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import BookIcon from '@mui/icons-material/Book';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
-import { Message, Conversation, Dialogue } from '../util/types';
+import {
+  Message,
+  Conversation,
+  Dialogue,
+  FeedbackResponse,
+  Feedback,
+} from '../util/types';
 import conversationData from '../assets/conversations/english.json';
 import { getFeedback } from '../util/api';
 
@@ -37,6 +46,10 @@ const ChatInterface: React.FC = () => {
   );
   const [userInputs, setUserInputs] = useState<string[]>([]);
   const [isFeedbackLoading, setFeedbackLoading] = useState<boolean>(false);
+  const [userMessageCount, setUserMessageCount] = useState<number>(0);
+  const [userFinalDraft, setUserFinalDraft] = useState<string | null>(null);
+  const [isFinalDraftSubmitted, setIsFinalDraftSubmitted] =
+    useState<boolean>(false);
 
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -48,6 +61,8 @@ const ChatInterface: React.FC = () => {
 
   // Destructure properties if conversation exists
   const { dialogue, title, setting, speaker } = selectedConversation || {};
+
+  const isInputDisabled = userMessageCount === 4;
 
   // Initialize the first system message on component mount and when conversation changes
   useEffect(() => {
@@ -91,11 +106,22 @@ const ChatInterface: React.FC = () => {
       content: currentInput.trim(),
     };
     setMessages((prev) => [...prev, userMessage]);
-    if (currentDialogueIndex === 2) {
-      // Start collecting after id:2
-      setUserInputs((prevInputs) => [...prevInputs, userMessageContent]);
+
+    const newUserMessageCount = userMessageCount + 1;
+    setUserMessageCount(newUserMessageCount);
+    console.log('User message count:', newUserMessageCount);
+
+    let newInputs = userInputs;
+    if (newUserMessageCount > 2 && newUserMessageCount <= 4) {
+      newInputs = [...userInputs, userMessageContent];
+      setUserInputs(newInputs);
+      console.log('Updated userInputs:', newInputs);
     }
     setCurrentInput('');
+
+    if (userMessageCount === 4) {
+      return;
+    }
 
     // Proceed to the next system message within the same conversation
     if (currentDialogueIndex + 1 < selectedConversation.dialogue.length) {
@@ -114,14 +140,16 @@ const ChatInterface: React.FC = () => {
           setMessages((prev) => [...prev, systemMessage]);
           setCurrentDialogueIndex(currentDialogueIndex + 1);
           setShowHint(false); // Reset hint visibility for the new message
-          if (currentDialogueIndex + 1 === 3 && userInputs.length > 0) {
-           handleFeedback(userInputs);
+          if (newUserMessageCount === 3) {
+            console.log('Triggering handleFeedback with:', newInputs);
+            handleFeedback(newInputs);
           }
         }
         setLoading(false);
       }, 1000); // 1-second delay to mimic processing
-    } else {
+    } else if (isFinalDraftSubmitted) {
       // Optionally handle end of conversation
+
       const endMessage: Message = {
         id: Date.now(),
         role: 'System',
@@ -129,9 +157,10 @@ const ChatInterface: React.FC = () => {
         hint: null,
       };
       setMessages((prev) => [...prev, endMessage]);
-      if (userInputs.length > 0) {
-        await handleFeedback(userInputs);
-      }
+
+      // if (userInputs.length === 3 && !isFinalDraftSubmitted) {
+      //   await handleFeedback(userInputs);
+      // }
     }
   };
 
@@ -142,46 +171,49 @@ const ChatInterface: React.FC = () => {
     const draftText = inputs.join(' ');
 
     try {
-      const feedback = await getFeedback(draftText);
+      const feedbackfromApi: FeedbackResponse = await getFeedback(draftText);
 
-      // Assuming feedback contains 'generalFeedback' and 'detailedCorrections'
-      if (typeof feedback === 'object' && feedback !== null) {
-        const { generalFeedback, detailedCorrections } = feedback;
+      const { feedback } = feedbackfromApi;
 
-        // Append general feedback
-        if (generalFeedback) {
-          const feedbackMessage: Message = {
-            id: Date.now() + 1,
-            role: 'System',
-            content: `**General Feedback:** ${generalFeedback}`,
-            hint: null,
-          };
-          setMessages((prev) => [...prev, feedbackMessage]);
-        }
+      if (feedback) {
+        const structuredFeedback: Feedback = {
+          title: 'Feedback:',
+          items: [
+            {
+              category: 'Coherence & Organization',
+              value: feedback['Coherence & Organization'],
+            },
+            { category: 'Content', value: feedback['Content'] },
+            { category: 'Structure', value: feedback['Structure'] },
+          ],
+        };
 
-        // Append detailed corrections
-        if (detailedCorrections) {
-          const correctionsMessage: Message = {
-            id: Date.now() + 2,
-            role: 'System',
-            content: `**Detailed Corrections:** ${detailedCorrections}`,
-            hint: null,
-          };
-          setMessages((prev) => [...prev, correctionsMessage]);
-        }
-
-        // Optionally, reset user inputs after feedback
-        setUserInputs([]);
-      } else {
-        // Handle unexpected feedback format
-        const errorMessage: Message = {
-          id: Date.now() + 3,
+        const feedbackMessage: Message = {
+          id: Date.now() + 1,
           role: 'System',
-          content: 'Received unexpected feedback format from the server.',
+          content: '',
+          feedback: structuredFeedback,
           hint: null,
         };
-        setMessages((prev) => [...prev, errorMessage]);
+        const SAMPLEfeedbackMessage: Message = {
+          id: Date.now() + 1,
+          role: 'System',
+          content: 'feedback from API',
+          hint: null,
+        };
+
+        const reviseMessage: Message = {
+          id: Date.now() + 2, // Ensure unique ID
+          role: 'System',
+          content: "Great! We're almost there! Just some minor changes needed.",
+          hint: null,
+        };
+
+        setMessages((prev) => [...prev, feedbackMessage, reviseMessage]);
       }
+
+      // Optionally, reset user inputs after feedback
+      setUserInputs([]);
     } catch (error) {
       // Handle errors during feedback retrieval
       const errorMessage: Message = {
@@ -219,8 +251,91 @@ const ChatInterface: React.FC = () => {
     setSelectedConversationId(newConversationId);
     setUserInputs([]);
   };
+
+  //handler to submit final draft
+  const handleSubmitFinalDraft = () => {
+    if (userMessageCount === 4) {
+      const finalDraft = userInputs[userInputs.length - 1];
+
+      if (!finalDraft) {
+        console.error(
+          'Final draft is undefined. Check userInputs:',
+          userInputs
+        );
+        return;
+      }
+      setUserFinalDraft(finalDraft);
+      setIsFinalDraftSubmitted(true);
+
+      const submissionMessage: Message = {
+        id: Date.now(),
+        role: 'System',
+        content:
+          "Great! Let's showcase your work! Choose the output format below.",
+        hint: null,
+      };
+      setMessages((prev) => [...prev, submissionMessage]);
+    }
+  };
+
+  const handleReviseFinalDraft = () => {
+    if (userMessageCount === 4) {
+      setIsFinalDraftSubmitted(false);
+      setUserFinalDraft(null);
+      setUserMessageCount(3);
+      setUserInputs((prev) => prev.slice(0, 3));
+      // setMessages((prev) => prev.filter((msg) => msg.role !== 'System')); // Remove end message
+      // setMessages(prev=>prev.slice(0,-1));
+
+      const reviseSystemMessage: Message = {
+        id: Date.now() + 5, // Ensure a unique ID
+        role: 'System',
+        content: 'Great! Take your time to revise your draft.',
+        hint: null,
+      };
+      setMessages((prev) => [...prev, reviseSystemMessage]);
+    }
+  };
+
+  // Handler for adding an image
+  const handleAddImage = () => {
+    // Implement the logic to add an image
+    console.log('Add Image button clicked');
+  };
+
+  // Handler for sending a letter
+  const handleSendLetter = () => {
+    // Implement the logic to send a letter
+    console.log('Send Letter button clicked');
+  };
+
+  // Handler for opening the diary/journal
+  const handleOpenDiary = () => {
+    // Implement the logic to open the diary/journal
+    console.log('Open Diary button clicked');
+  };
+
+  const postSubmissionButtons = [
+    {
+      label: 'Add Image',
+      icon: <ImageIcon />,
+      onClick: handleAddImage, // Define this handler
+    },
+    {
+      label: 'Send Letter',
+      icon: <MailOutlineIcon />,
+      onClick: handleSendLetter, // Define this handler
+    },
+    {
+      label: 'Open Diary',
+      icon: <BookIcon />,
+      onClick: handleOpenDiary, // Define this handler
+    },
+  ];
+
   console.log('usermessage: ' + userInputs);
-  const isInputDisabled = currentDialogueIndex === 3;
+  console.log('userFinalDraft: ' + userFinalDraft);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Chat Description */}
@@ -267,6 +382,53 @@ const ChatInterface: React.FC = () => {
         {messages.map((message) => (
           <MessageComponent key={message.id} message={message} />
         ))}
+        {/* Action Buttons after 4th Message */}
+        {userMessageCount === 4 && !isFinalDraftSubmitted && !loading && (
+          <Box
+            sx={{ display: 'flex', gap: 2, mb: 2, justifyContent: 'flex-end' }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmitFinalDraft}
+            >
+              Submit Final Draft
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={handleReviseFinalDraft}
+            >
+              Revise Draft
+            </Button>
+          </Box>
+        )}
+        {/* Action Buttons inside Messages Display */}
+  {isFinalDraftSubmitted && (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 2,
+        mt: 2,
+        mb: 2,
+        ml:6,
+        justifyContent: 'flex-start', 
+      }}
+    >
+      {postSubmissionButtons.map((button, index) => (
+        <Button
+          key={index}
+          variant="contained"
+          color="primary"
+          startIcon={button.icon}
+          onClick={button.onClick}
+        >
+          {button.label}
+        </Button>
+      ))}
+    </Box>
+  )}
+
         <div ref={endOfMessagesRef} />
         {loading && (
           <MessageComponent
@@ -329,7 +491,7 @@ const ChatInterface: React.FC = () => {
                   color="primary"
                   onClick={handleSendMessage}
                   edge="end"
-                  disabled={isInputDisabled || loading}
+                  disabled={isInputDisabled || loading || isFinalDraftSubmitted}
                   aria-label="send message"
                   sx={{
                     margin: '0px',
@@ -377,6 +539,16 @@ const ChatInterface: React.FC = () => {
               Fetching feedback...
             </Typography>
             <CircularProgress size={20} sx={{ ml: 1 }} />
+          </Box>
+        )}
+        {isFinalDraftSubmitted && userFinalDraft && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body1" color="green">
+              Your final draft has been submitted.
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Final Draft: {userFinalDraft}
+            </Typography>
           </Box>
         )}
       </Box>
