@@ -1,15 +1,10 @@
 
 
-
-
-
-
 export interface Message {
   id: number;
   role: string;
   content: string;
   romanized?: string;
-  options?: Option[];
   hint?:string[]|null;
   feedback?:Feedback|null;
 }
@@ -23,10 +18,7 @@ export type ChatDescriptionProps = {
 }
 
 
-export interface TranscriptObject {
-  text: string;
-  metadata: [Object];
-}
+
 export interface Conversation {
   id: string;
   title: string;
