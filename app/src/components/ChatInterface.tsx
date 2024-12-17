@@ -15,7 +15,7 @@ import {
   IconButton,
   CircularProgress,
 } from '@mui/material';
-import ImageIcon from '@mui/icons-material/Image';
+import VideoIcon from '@mui/icons-material/VideoFileOutlined';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import BookIcon from '@mui/icons-material/Book';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
@@ -29,7 +29,7 @@ import {
   Feedback,
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
-import { getFeedback } from '../util/api';
+import { generateAudio, getFeedback } from '../util/api';
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -50,6 +50,9 @@ const ChatInterface: React.FC = () => {
   const [userFinalDraft, setUserFinalDraft] = useState<string | null>(null);
   const [isFinalDraftSubmitted, setIsFinalDraftSubmitted] =
     useState<boolean>(false);
+  const [audioLoading, setAudioLoading] = useState<boolean>(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -228,6 +231,27 @@ const ChatInterface: React.FC = () => {
       setFeedbackLoading(false);
     }
   };
+  const initiateAudioGeneration = async (draft:string)=>{
+    setAudioLoading(true);
+    setAudioError(null);
+    try {
+      const text = draft;
+      const language = 'en';
+      const id = Date.now();
+      const uid = 12;
+      const index = 9;
+      const url = await generateAudio(text,language,id,uid,index);
+      if(url){
+        setAudioUrl(url);
+      }else{
+        setAudioError('Failed to generate Audio')
+      }
+    } catch (error) {
+      setAudioError("An error occurred during audio generation.");
+    }finally {
+      setAudioLoading(false);
+    }
+  }
 
   // Handler for Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -253,7 +277,7 @@ const ChatInterface: React.FC = () => {
   };
 
   //handler to submit final draft
-  const handleSubmitFinalDraft = () => {
+  const handleSubmitFinalDraft = async () => {
     if (userMessageCount === 4) {
       const finalDraft = userInputs[userInputs.length - 1];
 
@@ -266,7 +290,7 @@ const ChatInterface: React.FC = () => {
       }
       setUserFinalDraft(finalDraft);
       setIsFinalDraftSubmitted(true);
-
+      initiateAudioGeneration(finalDraft);
       const submissionMessage: Message = {
         id: Date.now(),
         role: 'System',
@@ -317,17 +341,17 @@ const ChatInterface: React.FC = () => {
 
   const postSubmissionButtons = [
     {
-      label: 'Add Image',
-      icon: <ImageIcon />,
+      label: 'Video',
+      icon: <VideoIcon />,
       onClick: handleAddImage, // Define this handler
     },
     {
-      label: 'Send Letter',
+      label: 'Letter',
       icon: <MailOutlineIcon />,
       onClick: handleSendLetter, // Define this handler
     },
     {
-      label: 'Open Diary',
+      label: 'Diary',
       icon: <BookIcon />,
       onClick: handleOpenDiary, // Define this handler
     },
@@ -404,30 +428,30 @@ const ChatInterface: React.FC = () => {
           </Box>
         )}
         {/* Action Buttons inside Messages Display */}
-  {isFinalDraftSubmitted && (
-    <Box
-      sx={{
-        display: 'flex',
-        gap: 2,
-        mt: 2,
-        mb: 2,
-        ml:6,
-        justifyContent: 'flex-start', 
-      }}
-    >
-      {postSubmissionButtons.map((button, index) => (
-        <Button
-          key={index}
-          variant="contained"
-          color="primary"
-          startIcon={button.icon}
-          onClick={button.onClick}
-        >
-          {button.label}
-        </Button>
-      ))}
-    </Box>
-  )}
+        {isFinalDraftSubmitted && (
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              mt: 2,
+              mb: 2,
+              ml: 6,
+              justifyContent: 'flex-start',
+            }}
+          >
+            {postSubmissionButtons.map((button, index) => (
+              <Button
+                key={index}
+                variant="contained"
+                color="primary"
+                startIcon={button.icon}
+                onClick={button.onClick}
+              >
+                {button.label}
+              </Button>
+            ))}
+          </Box>
+        )}
 
         <div ref={endOfMessagesRef} />
         {loading && (

@@ -5,6 +5,7 @@ const BASE_URL = dev
   ? 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/dev'
   : 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/beta';
 
+const SAVE_AUDIO_URL = 'https://kkunnx02n7.execute-api.ap-northeast-1.amazonaws.com/dev';
 
 export const getFeedback = async (draftText:string):Promise<FeedbackResponse> => {
   try {
@@ -32,5 +33,41 @@ export const getFeedback = async (draftText:string):Promise<FeedbackResponse> =>
       console.error('Unexpected error:', error);
     }
     throw new Error('Error getting feedback');
+  }
+};
+
+export const generateAudio = async (
+  text: string,
+  language: string,
+  id: string,
+  uid: string,
+  index: number,
+) => {
+  try {
+    // Prepare the request payload
+    const payload = {
+      text: text,
+      language: language,
+      id: id,
+      index: index,
+      uid: uid,
+    };
+
+    // Send the request to the server
+    const response = await axios.post(`${BASE_URL}/generateaudio`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.data && response.data.success) {
+      return response;
+    } else {
+      console.error('Unexpected response format from /saveaudio endpoint.');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error saving audio file:', error);
+    return null;
   }
 };

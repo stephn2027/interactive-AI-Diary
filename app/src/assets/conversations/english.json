@@ -40,5 +40,47 @@
         "content": "Nice Work! Let's make a few changes."
       }
     ]
+  },
+  {
+    "id": "introducingYourself",
+    "title": "Introducing Yourself",
+    "setting": "Self-Introduction",
+    "speaker": "User",
+    "dialogue": [
+      {
+        "id": 0,
+        "role": "System",
+        "content": "Let's brainstorm! First, tell me a bit about yourself.",
+        "hint": [
+          "Where are you from?",
+          "What are your hobbies?",
+          "What do you do for a living?",
+          "Example: - I'm from New York. - I enjoy painting and hiking. - I work as a graphic designer."
+        ]
+      },
+      {
+        "id": 1,
+        "role": "System",
+        "content": "Great! Let's organize your ideas into a simple structure. Please write the outline in 3 stages: Beginning, Middle, End.",
+        "hint": [
+          "Beginning: How will you start your introduction?",
+          "Middle: What are the main points you want to share?",
+          "End: How will you conclude your introduction?"
+        ]
+      },
+      {
+        "id": 2,
+        "role": "System",
+        "content": "Perfect! Let's turn this into a draft.",
+        "hint": [
+          "Sample draft: Hi, I'm Jane Doe from New York. I enjoy painting and hiking. I work as a graphic designer. Nice to meet you!"
+        ]
+      },
+      {
+        "id": 3,
+        "role": "System",
+        "content": "Nice work! Let's make a few changes to refine your introduction."
+      }
+    ]
   }
 ]
