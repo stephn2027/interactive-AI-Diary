@@ -15,9 +15,9 @@ import {
   IconButton,
   CircularProgress,
 } from '@mui/material';
-import VideoIcon from '@mui/icons-material/VideoFileOutlined';
+import ImageIcon from '@mui/icons-material/Image';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
-import BookIcon from '@mui/icons-material/Book';
+import BookIcon from '@mui/icons-material/BookOnlineSharp';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
@@ -29,7 +29,7 @@ import {
   Feedback,
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
-import { generateAudio, getFeedback } from '../util/api';
+import { compareDraftAPI, generateAudio, getFeedback } from '../util/api';
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -53,6 +53,7 @@ const ChatInterface: React.FC = () => {
   const [audioLoading, setAudioLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [initialDraft, setInitialDraft] = useState<string | null>(null);
 
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -172,7 +173,7 @@ const ChatInterface: React.FC = () => {
 
     // Combine user inputs into a single draftText
     const draftText = inputs.join(' ');
-
+    setInitialDraft(draftText);
     try {
       const feedbackfromApi: FeedbackResponse = await getFeedback(draftText);
 
@@ -231,7 +232,7 @@ const ChatInterface: React.FC = () => {
       setFeedbackLoading(false);
     }
   };
-  const initiateAudioGeneration = async (draft:string)=>{
+  const initiateAudioGeneration = async (draft: string) => {
     setAudioLoading(true);
     setAudioError(null);
     try {
@@ -240,18 +241,18 @@ const ChatInterface: React.FC = () => {
       const id = Date.now();
       const uid = 12;
       const index = 9;
-      const url = await generateAudio(text,language,id,uid,index);
-      if(url){
+      const url = await generateAudio(text, language, id, uid, index);
+      if (url) {
         setAudioUrl(url);
-      }else{
-        setAudioError('Failed to generate Audio')
+      } else {
+        setAudioError('Failed to generate Audio');
       }
     } catch (error) {
-      setAudioError("An error occurred during audio generation.");
-    }finally {
+      setAudioError('An error occurred during audio generation.');
+    } finally {
       setAudioLoading(false);
     }
-  }
+  };
 
   // Handler for Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -290,7 +291,8 @@ const ChatInterface: React.FC = () => {
       }
       setUserFinalDraft(finalDraft);
       setIsFinalDraftSubmitted(true);
-      initiateAudioGeneration(finalDraft);
+      // initiateAudioGeneration(finalDraft);
+      initiateDraftComparison(initialDraft, finalDraft);
       const submissionMessage: Message = {
         id: Date.now(),
         role: 'System',
@@ -320,7 +322,17 @@ const ChatInterface: React.FC = () => {
       setMessages((prev) => [...prev, reviseSystemMessage]);
     }
   };
-
+  const initiateDraftComparison = async (initial: string|null, final: string) => {
+    try {
+      setLoading(true);
+      const comparedDraftData = await compareDraftAPI(initial, final);
+      console.log('Journal: ' + comparedDraftData);
+    } catch (error) {
+      console.log('Error comparing drafts', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   // Handler for adding an image
   const handleAddImage = () => {
     // Implement the logic to add an image
@@ -341,20 +353,21 @@ const ChatInterface: React.FC = () => {
 
   const postSubmissionButtons = [
     {
-      label: 'Video',
-      icon: <VideoIcon />,
-      onClick: handleAddImage, // Define this handler
-    },
-    {
-      label: 'Letter',
-      icon: <MailOutlineIcon />,
-      onClick: handleSendLetter, // Define this handler
-    },
-    {
-      label: 'Diary',
+      label: 'Journal',
       icon: <BookIcon />,
       onClick: handleOpenDiary, // Define this handler
     },
+    {
+      label: 'Image',
+      icon: <ImageIcon />,
+      onClick: handleAddImage, // Define this handler
+    },
+    {
+      label: 'Story Book',
+      icon: <MailOutlineIcon />,
+      onClick: handleSendLetter, // Define this handler
+    },
+    
   ];
 
   console.log('usermessage: ' + userInputs);

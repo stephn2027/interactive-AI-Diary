@@ -71,3 +71,14 @@ export const generateAudio = async (
     return null;
   }
 };
+
+export const compareDraftAPI = async (initial:string|null,final:string) =>{
+  try {
+    console.log("Sending drafts to generate journal");
+    const response = await axios.post(`${BASE_URL}/compare`,{initialDraft:initial,finalDraft:final});
+    return response.data;
+  } catch (error) {
+    console.log("Error calling compareDraft API ", error);
+    throw error;
+  }
+}
