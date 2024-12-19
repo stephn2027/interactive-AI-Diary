@@ -30,6 +30,7 @@ import {
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
 import { compareDraftAPI, generateAudio, getFeedback } from '../util/api';
+import JournalDisplay from './JournalDisplay';
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -54,7 +55,8 @@ const ChatInterface: React.FC = () => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [initialDraft, setInitialDraft] = useState<string | null>(null);
-
+  const [journalData,setJournalData] = useState<string|null>(null)
+  const [isJournalButtonClicked,setIsJournalButtonCliked] = useState<boolean>(false)
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +83,10 @@ const ChatInterface: React.FC = () => {
       setMessages([firstSystemMessage]);
       setCurrentDialogueIndex(0);
       setShowHint(false);
+      setInitialDraft(null);
+      setUserFinalDraft(null);
+      setIsJournalButtonCliked(false);
+      setJournalData(null);
     } else {
       // Handle the case where there's no dialogue
       setMessages([]);
@@ -292,7 +298,7 @@ const ChatInterface: React.FC = () => {
       setUserFinalDraft(finalDraft);
       setIsFinalDraftSubmitted(true);
       // initiateAudioGeneration(finalDraft);
-      initiateDraftComparison(initialDraft, finalDraft);
+      
       const submissionMessage: Message = {
         id: Date.now(),
         role: 'System',
@@ -322,11 +328,21 @@ const ChatInterface: React.FC = () => {
       setMessages((prev) => [...prev, reviseSystemMessage]);
     }
   };
-  const initiateDraftComparison = async (initial: string|null, final: string) => {
+  const initiateDraftComparison = async (initial: string|null, final: string|null) => {
     try {
       setLoading(true);
       const comparedDraftData = await compareDraftAPI(initial, final);
-      console.log('Journal: ' + comparedDraftData);
+      console.log('Journal: ',comparedDraftData);
+      const improvementData = comparedDraftData.draftImprovementData;
+      setJournalData(improvementData);
+      const comparisonMessage: Message = {
+        id: Date.now() + 7, 
+        role: 'System',
+        content: improvementData, // Adjust based on response structure
+        hint: null,
+      };
+      setMessages((prev) => [...prev, comparisonMessage]);
+
     } catch (error) {
       console.log('Error comparing drafts', error);
     } finally {
@@ -347,7 +363,8 @@ const ChatInterface: React.FC = () => {
 
   // Handler for opening the diary/journal
   const handleOpenDiary = () => {
-    // Implement the logic to open the diary/journal
+    initiateDraftComparison(initialDraft, userFinalDraft);
+    setIsJournalButtonCliked(true);
     console.log('Open Diary button clicked');
   };
 
@@ -355,7 +372,8 @@ const ChatInterface: React.FC = () => {
     {
       label: 'Journal',
       icon: <BookIcon />,
-      onClick: handleOpenDiary, // Define this handler
+      onClick: handleOpenDiary,
+      disabled:isJournalButtonClicked,
     },
     {
       label: 'Image',
@@ -370,8 +388,7 @@ const ChatInterface: React.FC = () => {
     
   ];
 
-  console.log('usermessage: ' + userInputs);
-  console.log('userFinalDraft: ' + userFinalDraft);
+  
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -459,6 +476,7 @@ const ChatInterface: React.FC = () => {
                 color="primary"
                 startIcon={button.icon}
                 onClick={button.onClick}
+                disabled={button.disabled||false}
               >
                 {button.label}
               </Button>
@@ -479,7 +497,11 @@ const ChatInterface: React.FC = () => {
           />
         )}
       </Box>
-
+           {/* Journal Results Displayed After Hints */}
+      {isJournalButtonClicked && journalData && (
+        <JournalDisplay journalData={journalData}/>
+      )}
+        
       {/* Show Hint Button */}
       {messages.length > 0 &&
         messages[messages.length - 1].role === 'System' &&
@@ -509,7 +531,7 @@ const ChatInterface: React.FC = () => {
 
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
-      <Box sx={{ mt: 2 }}>
+    {!isFinalDraftSubmitted && <Box sx={{ mt: 2 }}>
         <TextField
           fullWidth
           variant="outlined"
@@ -588,7 +610,7 @@ const ChatInterface: React.FC = () => {
             </Typography>
           </Box>
         )}
-      </Box>
+      </Box>}
     </Box>
   );
 };

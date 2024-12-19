@@ -17,6 +17,7 @@
     "axios": "^1.7.8",
     "dayjs": "^1.11.13",
     "framer": "^2.4.1",
+    "markdown-to-jsx": "^7.7.2",
     "motion": "^11.11.17",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

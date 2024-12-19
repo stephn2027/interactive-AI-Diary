@@ -72,7 +72,7 @@ export const generateAudio = async (
   }
 };
 
-export const compareDraftAPI = async (initial:string|null,final:string) =>{
+export const compareDraftAPI = async (initial:string|null,final:string|null) =>{
   try {
     console.log("Sending drafts to generate journal");
     const response = await axios.post(`${BASE_URL}/compare`,{initialDraft:initial,finalDraft:final});

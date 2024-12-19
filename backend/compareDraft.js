@@ -45,18 +45,21 @@ export const handler = async (event) => {
       role: 'user',
       content: `Compare the following two drafts and highlight the improvements in the final draft. Use *italics* and color formatting for words or phrases that have been improved. For each improvement, provide a short explanation.
         
-        **Initial Draft:**
+        **First Draft:**
         "${initialDraft}"
 
-        **Final Draft:**
+        **Revised Draft:**
         "${finalDraft}"
 
         **Response Format:**
         Compare the drafts below:
 
-        Final Draft with highlighted improvements:
+        First Draft:
+        <First Draft>
 
-        <Final Draft with improvements>
+        Revised Draft with highlighted improvements:
+
+        <Revised Draft with improvements>
 
         Explanations for Improvements:
 
@@ -66,7 +69,7 @@ export const handler = async (event) => {
     },
   ];
   try {
-    const response = axios.post(
+    const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-2024-08-06',
@@ -98,7 +101,7 @@ export const handler = async (event) => {
       // Fallback: Return the raw AI response if JSON parsing fails
 
       formattedResponse = {
-        feedback: aiResponse,
+        draftImprovementData: aiResponse,
       };
     }
     return {
@@ -107,13 +110,36 @@ export const handler = async (event) => {
       headers,
     };
   } catch (error) {
-    console.error('Error communicating with OpenAI API:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: 'Error generating feedback.',
-      }),
-      headers,
-    };
+    if (error.response) {
+        // The request was made, and the server responded with a status code outside of the 2xx range
+        console.error('OpenAI API responded with an error:', error.response.data);
+        return {
+          statusCode: error.response.status,
+          body: JSON.stringify({
+            message: error.response.data.error.message || 'Error from OpenAI API.',
+          }),
+          headers,
+        };
+      } else if (error.request) {
+        // The request was made, but no response was received
+        console.error('No response received from OpenAI API:', error.request);
+        return {
+          statusCode: 502,
+          body: JSON.stringify({
+            message: 'No response from OpenAI API.',
+          }),
+          headers,
+        };
+      } else {
+        // Something happened in setting up the request
+        console.error('Error setting up OpenAI API request:', error.message);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({
+            message: 'Error setting up OpenAI API request.',
+          }),
+          headers,
+        };
+      }
   }
 };
