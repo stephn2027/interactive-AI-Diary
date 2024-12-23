@@ -15,27 +15,29 @@ First Draft:
 "I go to store buy laptop. Staff show two laptops. I choose big one. It very nice."
 
 Revised Draft with highlighted improvements:
-
-"First, *I went* to the store *to buy* a laptop. Then, *the staff showed me* two laptops. *I chose* the big one *because it has a bigger screen and better performance*."
+"*I went* to the store *to buy* a laptop. *The staff showed me* two laptops, and *I chose* the big one."
 
 Explanations for Improvements:
-
 1. *I went*: The verb "went" is used instead of "go," making the sentence past tense, which is grammatically correct. This change makes the timing of the action clear and consistent.
 2. *to buy*: Adding "to buy" clarifies the purpose of the visit to the store, which makes the sentence more informative and specific.
-3. *the staff showed me*: The revised phrase clarifies the role of "the staff" and indicates interaction ("showed me"), making the sentence clearer and more descriptive.
+3. *The staff showed me*: Adding "the" before "staff" and "showed me" clarifies who is performing the action and indicates interaction with the narrator, making the sentence clearer and more descriptive.
 4. *I chose*: Changing "choose" to "chose" corrects the verb tense to past tense, matching the rest of the narrative.
-5. *because it has a bigger screen and better performance*: This addition provides a reason for the choice made, enhancing the sentence by giving the reader more detailed information about the decision.
 `;
 
 export default function JournalDisplay({ journalData }: JournalDisplayProps) {
   // Use sample data if journalData is not provided
-  const dataToParse = sampleJournalData;
+  const dataToParse = journalData || sampleJournalData;
+  console.log('JOURNAL DATA:', journalData);
+
+  // Helper function to normalize strings
+  const normalizeString = (str: string) =>
+    str.trim().toLowerCase().replace(/[.,!?]/g, '');
 
   // Function to split the journalData into sections
   const parseSections = (text: string) => {
     const sections: { [key: string]: string } = {};
     const sectionRegex =
-      /^(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:)\s*([\s\S]*?)(?=^(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:|$))/gmi;
+      /^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:)\s*([\s\S]*?)(?=^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:|$))/gmi;
     let match;
     while ((match = sectionRegex.exec(text)) !== null) {
       const sectionTitle = match[1].trim();
@@ -47,32 +49,39 @@ export default function JournalDisplay({ journalData }: JournalDisplayProps) {
   };
 
   const sections = useMemo(() => parseSections(dataToParse), [dataToParse]);
+  console.log('Sections after parsing:', sections);
 
   // Parse explanations into a map for easy lookup
   const explanationMap: ExplanationMap = useMemo(() => {
     const explanationsText = sections['Explanations for Improvements:'] || '';
+    console.log('Explanations Text:', explanationsText);
     const map: ExplanationMap = {};
 
-    // Enhanced regex to match optional numbering and *word*: explanation patterns globally
-    const explanationRegex = /(?:\d+\.\s*)?\*(.*?)\*:\s*([^*\n]+)/g;
+    // Split explanations based on numbering (e.g., "1. ", "2. ")
+    const explanationItems = explanationsText.split(/\d+\.\s*/).filter(item => item.trim() !== '');
+    console.log('Explanation Items:', explanationItems);
 
-    let match;
-    while ((match = explanationRegex.exec(explanationsText)) !== null) {
-      const rawWord = match[1].trim().toLowerCase();
-      const word = rawWord.replace(/[.,!?]$/g, '');
-      const explanation = match[2].trim();
-      if (word && explanation) {
-        map[word] = explanation;
-        console.log(`Added to Explanation Map - Word: "${word}", Explanation: "${explanation}"`);
+    explanationItems.forEach(item => {
+      // Match the pattern: *word*: explanation
+      const match = item.match(/\*([^*]+)\*:\s*(.+)/s); // 's' flag for multiline support
+      if (match) {
+        const rawWord = match[1].trim();
+        const word = normalizeString(rawWord);
+        const explanation = match[2].trim();
+        if (word && explanation) {
+          map[word] = explanation;
+          console.log(`Added to Explanation Map - Word: "${word}", Explanation: "${explanation}"`);
+        }
+      } else {
+        console.warn(`Failed to parse explanation item: "${item}"`);
       }
-    }
-
+    });
     console.log('Final Explanations Map:', map);
     return map;
   }, [sections]);
 
   const renderHighlightedText = (text: string) => {
-    const regex = /\*(.*?)\*/g;
+    const regex = /\*([^*]+)\*/g;
     const elements: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
@@ -87,9 +96,8 @@ export default function JournalDisplay({ journalData }: JournalDisplayProps) {
         elements.push(<span key={key++}>{precedingText}</span>);
       }
       // Normalize the highlighted word/phrase
-      const keyWord = highlightedText.trim().toLowerCase().replace(/[.,!?]$/g, '');
-      const explanation =
-        explanationMap[keyWord] || 'No explanation provided';
+      const keyWord = normalizeString(highlightedText);
+      const explanation = explanationMap[keyWord] || 'No explanation provided';
       console.log(`Highlighted Word: "${highlightedText}", Explanation: "${explanation}"`);
       // Add Tooltip-wrapped highlighted text
       elements.push(
