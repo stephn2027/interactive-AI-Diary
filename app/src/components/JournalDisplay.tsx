@@ -11,17 +11,17 @@ interface ExplanationMap {
 }
 
 const sampleJournalData = `
-First Draft:
+"First Draft:  
 "I go to store buy laptop. Staff show two laptops. I choose big one. It very nice."
 
 Revised Draft with highlighted improvements:
-"*I went* to the store *to buy* a laptop. *The staff showed me* two laptops, and *I chose* the big one."
 
-Explanations for Improvements:
-1. *I went*: The verb "went" is used instead of "go," making the sentence past tense, which is grammatically correct. This change makes the timing of the action clear and consistent.
-2. *to buy*: Adding "to buy" clarifies the purpose of the visit to the store, which makes the sentence more informative and specific.
-3. *The staff showed me*: Adding "the" before "staff" and "showed me" clarifies who is performing the action and indicates interaction with the narrator, making the sentence clearer and more descriptive.
-4. *I chose*: Changing "choose" to "chose" corrects the verb tense to past tense, matching the rest of the narrative.
+"I *went to the store to buy* a laptop. *The store staff showed me two different* laptops. The *big laptop had a sleek design and a bright screen, which caught my attention*."
+
+Explanations for Improvements:  
+1. *went to the store to buy*: The phrase incorporates "went," correcting the verb tense to past tense, and adds "to buy," clarifying the purpose of the visit. These changes make the sentence grammatically correct and more specific.  
+2. *The store staff showed me two different*: By specifying "The store" and using "showed me two different," the revised version adds clarity about who is showing the laptops and emphasizes the variety by specifying "two different."  
+3. *big laptop had a sleek design and a bright screen, which caught my attention*: This addition provides detailed reasons for why the big laptop was appealing, enhancing the sentence with descriptive information and explaining the decision-making process."
 `;
 
 export default function JournalDisplay({ journalData }: JournalDisplayProps) {
@@ -37,7 +37,7 @@ export default function JournalDisplay({ journalData }: JournalDisplayProps) {
   const parseSections = (text: string) => {
     const sections: { [key: string]: string } = {};
     const sectionRegex =
-      /^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:)\s*([\s\S]*?)(?=^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:|$))/gmi;
+  /^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:)\s*([\s\S]*?)(?=^\s*(First Draft:|Revised Draft with highlighted improvements:|Explanations for Improvements:|$))/gmi;
     let match;
     while ((match = sectionRegex.exec(text)) !== null) {
       const sectionTitle = match[1].trim();

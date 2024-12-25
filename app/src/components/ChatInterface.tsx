@@ -30,7 +30,9 @@ import {
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
 import { compareDraftAPI, generateAudio, getFeedback } from '../util/api';
-import JournalDisplay from './JournalDisplay';
+
+import JournalDataDisplay from './JournalDataDisplay';
+
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -497,9 +499,10 @@ const ChatInterface: React.FC = () => {
           />
         )}
       </Box>
-           {/* Journal Results Displayed After Hints */}
-      {isJournalButtonClicked && journalData && (
-        <JournalDisplay journalData={journalData}/>
+           {/* Journal Results Displayed After Hints  */}
+       {isJournalButtonClicked && journalData && (
+        // <JournalDisplay journalData={journalData}/>
+        <JournalDataDisplay journalData={journalData}/>
       )}
         
       {/* Show Hint Button */}
