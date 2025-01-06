@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Paper,
   Typography,
@@ -7,6 +7,7 @@ import {
   ListItemText,
   Box,
   Button,
+  Tooltip,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import { pdf } from '@react-pdf/renderer';
@@ -140,6 +141,26 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   const parsedSections = parseSections(sections);
   console.log('Parsed Sections:', parsedSections); // Debugging statement
 
+  
+  const explanationsMap = useMemo(() => {
+    const explanationsSection = parsedSections.find(
+      (section) => section.header === 'Explanations for Improvements'
+    );
+    if (!explanationsSection) {
+      return {};
+    }
+    const explanations: { [key: string]: string } = {};
+    explanationsSection.content.split('\n').forEach((line) => {
+      const match = line.match(/^\d+\.\s*\*(.+?)\*:\s*(.+)$/);
+      if (match) {
+        const key = match[1].trim();
+        const value = match[2].trim();
+        explanations[key] = value;
+      }
+    });
+    return explanations;
+  }, [parsedSections]);
+
   // Helper function to render text with highlighted parts
   const renderHighlightedText = (text: string) => {
     if (!text) return null;
@@ -155,13 +176,36 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
         const content = part.slice(1, -1).trim(); // Remove asterisks and trim spaces
         console.log(`Highlighting part ${index}:`, content); // Debugging statement
         return (
+            <Tooltip
+            key={index}
+            title={explanationsMap[content] || 'No explanation available'}
+            arrow
+            placement='top'
+            PopperProps={{
+                modifiers: [
+                  {
+                    name: 'flip',
+                    options: {
+                      fallbackPlacements: ['top', 'bottom', 'left', 'right'],
+                    },
+                  },
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      boundary: 'none', // Ensure the tooltip stays within the viewport
+                    },
+                  },
+                ],
+              }}
+            >
           <Typography
             component="span"
             key={index}
-            sx={{ color: 'primary.main', fontWeight: 'bold' }}
+            sx={{ color: 'primary.main', fontWeight: 'bold', cursor:'pointer',display:'inline-block'}}
           >
             {content}
           </Typography>
+          </Tooltip>
         );
       } else {
         return <span key={index}>{part}</span>;
@@ -257,7 +301,7 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
               </Typography>
               <Typography
                 variant="body1"
-                sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic' }}
+                sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic',paddingInline:6}}
               >
                 {content}
               </Typography>
@@ -271,8 +315,9 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
               <Typography variant="h6" gutterBottom>
                 Revised Draft
               </Typography>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', paddingInline:6 }}>
                 {renderHighlightedText(content)}
+                {/* {content} */}
               </Typography>
             </Box>
           );

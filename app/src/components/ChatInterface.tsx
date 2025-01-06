@@ -3,9 +3,7 @@ import {
   Box,
   Button,
   TextField,
-  Grid,
   Typography,
-  Paper,
   FormControl,
   InputLabel,
   Select,
@@ -24,15 +22,13 @@ import ChatDescription from './ChatDescription';
 import {
   Message,
   Conversation,
-  Dialogue,
   FeedbackResponse,
   Feedback,
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
-import { compareDraftAPI, generateAudio, getFeedback } from '../util/api';
+import { compareDraftAPI, getFeedback } from '../util/api';
 
 import JournalDataDisplay from './JournalDataDisplay';
-
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -53,14 +49,20 @@ const ChatInterface: React.FC = () => {
   const [userFinalDraft, setUserFinalDraft] = useState<string | null>(null);
   const [isFinalDraftSubmitted, setIsFinalDraftSubmitted] =
     useState<boolean>(false);
-  const [audioLoading, setAudioLoading] = useState<boolean>(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioError, setAudioError] = useState<string | null>(null);
+  // const [audioLoading, setAudioLoading] = useState<boolean>(false);
+  // const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  // const [audioError, setAudioError] = useState<string | null>(null);
   const [initialDraft, setInitialDraft] = useState<string | null>(null);
-  const [journalData,setJournalData] = useState<string|null>(null)
-  const [isJournalButtonClicked,setIsJournalButtonCliked] = useState<boolean>(false)
+  const [journalData, setJournalData] = useState<string | null>(null);
+  const [isJournalButtonClicked, setIsJournalButtonCliked] =
+    useState<boolean>(false);
+  const [hasReviseMessageShown, setHasRevisedMessageShown] =
+    useState<boolean>(false);
+  const [postSubmissionLoading, setPostSubmissionLoading] =
+    useState<boolean>(false);
   // Ref for scrolling to bottom
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Select the current conversation
   const selectedConversation = conversations.find(
@@ -68,7 +70,7 @@ const ChatInterface: React.FC = () => {
   );
 
   // Destructure properties if conversation exists
-  const { dialogue, title, setting, speaker } = selectedConversation || {};
+  const { title, setting, speaker } = selectedConversation || {};
 
   const isInputDisabled = userMessageCount === 4;
 
@@ -89,6 +91,8 @@ const ChatInterface: React.FC = () => {
       setUserFinalDraft(null);
       setIsJournalButtonCliked(false);
       setJournalData(null);
+      setUserMessageCount(0);
+      setHasRevisedMessageShown(false);
     } else {
       // Handle the case where there's no dialogue
       setMessages([]);
@@ -104,7 +108,10 @@ const ChatInterface: React.FC = () => {
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
-    scrollToBottom();
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      scrollToBottom();
   }, [messages]);
 
   // Handler for sending a message
@@ -130,6 +137,10 @@ const ChatInterface: React.FC = () => {
       console.log('Updated userInputs:', newInputs);
     }
     setCurrentInput('');
+
+    if(inputRef.current){
+      inputRef.current.focus();
+    };
 
     if (userMessageCount === 4) {
       return;
@@ -240,27 +251,27 @@ const ChatInterface: React.FC = () => {
       setFeedbackLoading(false);
     }
   };
-  const initiateAudioGeneration = async (draft: string) => {
-    setAudioLoading(true);
-    setAudioError(null);
-    try {
-      const text = draft;
-      const language = 'en';
-      const id = Date.now();
-      const uid = 12;
-      const index = 9;
-      const url = await generateAudio(text, language, id, uid, index);
-      if (url) {
-        setAudioUrl(url);
-      } else {
-        setAudioError('Failed to generate Audio');
-      }
-    } catch (error) {
-      setAudioError('An error occurred during audio generation.');
-    } finally {
-      setAudioLoading(false);
-    }
-  };
+  // const initiateAudioGeneration = async (draft: string) => {
+  // setAudioLoading(true);
+  // setAudioError(null);
+  // try {
+  //   const text = draft;
+  //   const language = 'en';
+  //   const id = Date.now();
+  //   const uid = 12;
+  //   const index = 9;
+  //   const url = await generateAudio(text, language, id, uid, index);
+  //   if (url) {
+  //     setAudioUrl(url);
+  //   } else {
+  //     setAudioError('Failed to generate Audio');
+  //   }
+  // } catch (error) {
+  //   setAudioError('An error occurred during audio generation.');
+  // } finally {
+  //   setAudioLoading(false);
+  // }
+  // };
 
   // Handler for Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -300,7 +311,7 @@ const ChatInterface: React.FC = () => {
       setUserFinalDraft(finalDraft);
       setIsFinalDraftSubmitted(true);
       // initiateAudioGeneration(finalDraft);
-      
+
       const submissionMessage: Message = {
         id: Date.now(),
         role: 'System',
@@ -320,54 +331,83 @@ const ChatInterface: React.FC = () => {
       setUserInputs((prev) => prev.slice(0, 3));
       // setMessages((prev) => prev.filter((msg) => msg.role !== 'System')); // Remove end message
       // setMessages(prev=>prev.slice(0,-1));
-
-      const reviseSystemMessage: Message = {
-        id: Date.now() + 5, // Ensure a unique ID
-        role: 'System',
-        content: 'Great! Take your time to revise your draft.',
-        hint: null,
-      };
-      setMessages((prev) => [...prev, reviseSystemMessage]);
+      if (!hasReviseMessageShown) {
+        const reviseSystemMessage: Message = {
+          id: Date.now() + 5, // Ensure a unique ID
+          role: 'System',
+          content: 'Great! Take your time to revise your draft.',
+          hint: null,
+        };
+        setMessages((prev) => [...prev, reviseSystemMessage]);
+        setHasRevisedMessageShown(true);
+      }
     }
   };
-  const initiateDraftComparison = async (initial: string|null, final: string|null) => {
+
+  const initiateDraftComparison = async (
+    initial: string | null,
+    final: string | null
+  ) => {
+    setPostSubmissionLoading(true)
     try {
-      setLoading(true);
       const comparedDraftData = await compareDraftAPI(initial, final);
-      console.log('Journal: ',comparedDraftData);
+      console.log('Journal: ', comparedDraftData);
       const improvementData = comparedDraftData.draftImprovementData;
       setJournalData(improvementData);
-      const comparisonMessage: Message = {
-        id: Date.now() + 7, 
-        role: 'System',
-        content: improvementData, // Adjust based on response structure
-        hint: null,
-      };
-      setMessages((prev) => [...prev, comparisonMessage]);
-
+      // const comparisonMessage: Message = {
+      //   id: Date.now() + 7,
+      //   role: 'System',
+      //   content: improvementData, // Adjust based on response structure
+      //   hint: null,
+      // };
+      // setMessages((prev) => [...prev, comparisonMessage]);
     } catch (error) {
       console.log('Error comparing drafts', error);
-    } finally {
-      setLoading(false);
+    } finally {  
+      setPostSubmissionLoading(false)
     }
   };
   // Handler for adding an image
-  const handleAddImage = () => {
-    // Implement the logic to add an image
-    console.log('Add Image button clicked');
+  const handleAddImage = async () => {
+    setPostSubmissionLoading(true); // Start loading
+    try {
+        // TODO: Implement image addition logic here
+        console.log('Add Image button clicked');
+        // Simulate async operation
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+    } catch (error) {
+        console.error('Error adding image:', error);
+        // Optionally, add error handling messages here
+    } finally {
+        setPostSubmissionLoading(false); // Stop loading
+    }
   };
 
   // Handler for sending a letter
-  const handleSendLetter = () => {
-    // Implement the logic to send a letter
-    console.log('Send Letter button clicked');
+  const handleSendLetter = async () => {
+    setPostSubmissionLoading(true); // Start loading
+    try {
+        // TODO: Implement letter sending logic here
+        console.log('Send Letter button clicked');
+        // Simulate async operation
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+    } catch (error) {
+        console.error('Error sending letter:', error);
+        // Optionally, add error handling messages here
+    } finally {
+        setPostSubmissionLoading(false); // Stop loading
+    }
   };
 
   // Handler for opening the diary/journal
-  const handleOpenDiary = () => {
-    initiateDraftComparison(initialDraft, userFinalDraft);
-    setIsJournalButtonCliked(true);
+  const handleOpenDiary = async () => {
+    try {
+      await initiateDraftComparison(initialDraft, userFinalDraft);
+      setIsJournalButtonCliked(true);
     console.log('Open Diary button clicked');
+    } catch (error) {
+      console.error('Error opening diary:', error);
+    }
   };
 
   const postSubmissionButtons = [
@@ -375,7 +415,7 @@ const ChatInterface: React.FC = () => {
       label: 'Journal',
       icon: <BookIcon />,
       onClick: handleOpenDiary,
-      disabled:isJournalButtonClicked,
+      disabled: isJournalButtonClicked,
     },
     {
       label: 'Image',
@@ -387,13 +427,12 @@ const ChatInterface: React.FC = () => {
       icon: <MailOutlineIcon />,
       onClick: handleSendLetter, // Define this handler
     },
-    
   ];
 
-  
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%', mb: 6 }}
+    >
       {/* Chat Description */}
       {selectedConversation && (
         <ChatDescription
@@ -478,7 +517,7 @@ const ChatInterface: React.FC = () => {
                 color="primary"
                 startIcon={button.icon}
                 onClick={button.onClick}
-                disabled={button.disabled||false}
+                disabled={button.disabled || false}
               >
                 {button.label}
               </Button>
@@ -487,7 +526,7 @@ const ChatInterface: React.FC = () => {
         )}
 
         <div ref={endOfMessagesRef} />
-        {loading && (
+        {loading && !isJournalButtonClicked && (
           <MessageComponent
             message={{
               id: Date.now(),
@@ -499,12 +538,21 @@ const ChatInterface: React.FC = () => {
           />
         )}
       </Box>
-           {/* Journal Results Displayed After Hints  */}
-       {isJournalButtonClicked && journalData && (
+      {(isFeedbackLoading||postSubmissionLoading)&& (
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2" color="textSecondary">
+                Fetching results...
+              </Typography>
+              <CircularProgress size={20} sx={{ ml: 1 }} />
+            </Box>
+          )}
+
+      {/* Journal Results Displayed After Hints  */}
+      {isJournalButtonClicked && journalData && (
         // <JournalDisplay journalData={journalData}/>
-        <JournalDataDisplay journalData={journalData}/>
+        <JournalDataDisplay journalData={journalData} />
       )}
-        
+
       {/* Show Hint Button */}
       {messages.length > 0 &&
         messages[messages.length - 1].role === 'System' &&
@@ -534,86 +582,86 @@ const ChatInterface: React.FC = () => {
 
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
-    {!isFinalDraftSubmitted && <Box sx={{ mt: 2 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Type your message..."
-          value={currentInput}
-          onChange={(e) => setCurrentInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          multiline
-          minRows={1}
-          maxRows={6} // Auto-resize up to 6 rows
-          disabled={isInputDisabled || loading}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  color="primary"
-                  onClick={handleSendMessage}
-                  edge="end"
-                  disabled={isInputDisabled || loading || isFinalDraftSubmitted}
-                  aria-label="send message"
-                  sx={{
-                    margin: '0px',
-                    backgroundColor: '#1a73e8', // Blue background
-                    color: '#ffffff', // White icon
-                    padding: '.3rem',
-                    borderRadius: '50%',
-                    transition: 'background-color 0.3s, transform 0.2s',
-                    '&:hover': {
-                      backgroundColor: '#1669bb', // Darker blue on hover
-                      transform: 'translateY(-2px)', // Slightly move up on hover
-                    },
-                  }}
-                >
-                  <SendIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-            // Optional: Add styles to remove borders or adjust padding
-            sx: {
-              backgroundColor: '#ffffff',
-              borderRadius: '20px',
-            },
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '20px',
-            },
-            // Adjust the padding to align with ChatGPT style
-            '& .MuiInputBase-input': {
-              paddingRight: '60px', // Space for the icon
-            },
-          }}
-        />
-        {/* Optionally, display a message when input is disabled */}
-        {isInputDisabled && (
-          <Typography variant="caption" color="textSecondary" mt={1}>
-            Please follow the prompts to continue the conversation.
-          </Typography>
-        )}
-        {/* Display feedback loading indicator */}
-        {isFeedbackLoading && (
-          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" color="textSecondary">
-              Fetching feedback...
+      {!isFinalDraftSubmitted && (
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            autoFocus
+            variant="outlined"
+            placeholder="Type your message..."
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+            onKeyDown={handleKeyPress}
+            multiline
+            minRows={1}
+            maxRows={6} // Auto-resize up to 6 rows
+            disabled={isInputDisabled || loading}
+            inputRef={inputRef}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    color="primary"
+                    onClick={handleSendMessage}
+                    edge="end"
+                    tabIndex={-1}
+                    disabled={
+                      isInputDisabled || loading || isFinalDraftSubmitted
+                    }
+                    aria-label="send message"
+                    sx={{
+                      margin: '0px',
+                      backgroundColor: '#1a73e8', // Blue background
+                      color: '#ffffff', // White icon
+                      padding: '.3rem',
+                      borderRadius: '50%',
+                      transition: 'background-color 0.3s, transform 0.2s',
+                      '&:hover': {
+                        backgroundColor: '#1669bb', // Darker blue on hover
+                        transform: 'translateY(-2px)', // Slightly move up on hover
+                      },
+                    }}
+                  >
+                    <SendIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+              // Optional: Add styles to remove borders or adjust padding
+              sx: {
+                backgroundColor: '#ffffff',
+                borderRadius: '20px',
+              },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '20px',
+              },
+              // Adjust the padding to align with ChatGPT style
+              '& .MuiInputBase-input': {
+                paddingRight: '60px', // Space for the icon
+              },
+            }}
+          />
+          {/* Optionally, display a message when input is disabled */}
+          {isInputDisabled && (
+            <Typography variant="caption" color="textSecondary" mt={1}>
+              Please follow the prompts to continue the conversation.
             </Typography>
-            <CircularProgress size={20} sx={{ ml: 1 }} />
-          </Box>
-        )}
-        {isFinalDraftSubmitted && userFinalDraft && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body1" color="green">
-              Your final draft has been submitted.
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Final Draft: {userFinalDraft}
-            </Typography>
-          </Box>
-        )}
-      </Box>}
+          )}
+          {/* Display feedback loading indicator */}
+         
+          {isFinalDraftSubmitted && userFinalDraft && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body1" color="green">
+                Your final draft has been submitted.
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Final Draft: {userFinalDraft}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };

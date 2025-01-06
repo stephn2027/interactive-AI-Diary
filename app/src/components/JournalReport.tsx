@@ -7,44 +7,31 @@ import {
   Font,
   View,
 } from '@react-pdf/renderer';
-
-// Import your fonts
 import NotoSans from '../assets/fonts/NotoSans-VariableFont_wdth,wght.ttf';
 
-
-// Define the props for the component
+// Define the props interface
 interface JournalReportProps {
   journalData: string;
-  language: LanguageKey;
+  language?: LanguageKey;
 }
 
+// Define supported languages
 type LanguageKey = 'en' | 'it' | 'fr' | 'ja' | 'ko' | 'zh';
 
-// Register fonts
-
+// Register NotoSans font
 Font.register({
   family: 'NotoSans',
   src: NotoSans,
 });
 
-// Helper to get font family based on language
-const getFontFamily = (language: LanguageKey): string => {
-  switch (language) {
-    case 'ja':
-      return 'NotoSansCJKjp';
-    case 'ko':
-      return 'NotoSansCJKkr';
-    case 'zh':
-      return 'NotoSansCJKsc'; // or 'NotoSansTC' for Traditional Chinese
-    case 'en':
-    case 'it':
-    case 'fr':
-    default:
-      return 'NotoSans';
-  }
-};
+// Optionally, register other NotoSans CJK fonts if needed
+// Font.register({
+//   family: 'NotoSansCJKjp',
+//   src: '/path/to/NotoSansCJKjp-Regular.otf',
+// });
+// Similarly register NotoSansCJKkr and NotoSansCJKsc for Korean and Chinese
 
-// Define styles for PDF
+// Define styles
 const styles = StyleSheet.create({
   page: {
     padding: 40,
@@ -76,128 +63,143 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000000',
     fontFamily: 'NotoSans',
-    marginBottom: 5,
+    marginBottom: 10,
+    flexDirection: 'row',
   },
   listItemKey: {
     fontWeight: 'bold',
+    color: '#00796B',
+  },
+  listItemValue: {
+    flex: 1,
+    marginLeft: 5,
   },
 });
 
+// Helper function to determine font family based on language
+const getFontFamily = (language: LanguageKey): string => {
+  switch (language) {
+    case 'ja':
+      return 'NotoSansCJKjp';
+    case 'ko':
+      return 'NotoSansCJKkr';
+    case 'zh':
+      return 'NotoSansCJKsc';
+    default:
+      return 'NotoSans';
+  }
+};
+
+// Helper function to render text with highlighted parts
+const renderTextWithHighlights = (content: string) => {
+  if (!content) return null;
+  // Split the content by *...* to identify highlighted parts
+  const parts = content.split(/(\*[^*]+\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      // Remove the asterisks and apply highlighted style
+      const highlightedContent = part.slice(1, -1);
+      return (
+        <Text key={index} style={styles.highlightedText}>
+          {highlightedContent}
+        </Text>
+      );
+    }
+    // Regular text
+    return <Text key={index} style={styles.text}>{part}</Text>;
+  });
+};
+
+// Main JournalReport component
 const JournalReport: React.FC<JournalReportProps> = ({
   journalData,
   language = 'en',
 }) => {
   const fontFamily = getFontFamily(language);
-  const sections = journalData.split('\n\n').map((section) => section.trim());
 
-  // Helper function to render highlighted text
-  const renderHighlightedText = (text: string) => {
-    if (!text) return null;
+  // Function to extract sections using regex
+  const extractSections = (data: string): Record<string, string> => {
+    const sections: Record<string, string> = {};
 
-    // Use a regular expression to split the text by asterisks, retaining the asterisks
-    const regex = /(\*[^*]+\*)/g;
-    const parts = text.split(regex);
-    console.log('Parts after splitting in JournalReport:', parts); // Debugging statement
+    // Regex patterns for each section
+    const firstDraftRegex = /First Draft:\s*"([^"]*)"/i;
+    const revisedDraftRegex = /Revised Draft(?: with highlighted improvements)?:\s*"([^"]*)"/i;
+    const explanationsRegex = /Explanations for Improvements:\s*([\s\S]*)/i;
 
-    return parts.map((part, index) => {
-      if (part.startsWith('*') && part.endsWith('*')) {
-        const content = part.slice(1, -1).trim(); // Remove asterisks and trim spaces
-        console.log(`Highlighting part ${index} in JournalReport: "${content}"`); // Debugging statement
-        return (
-          <Text
-            key={index}
-            style={
-              language === 'ja' || language === 'ko' || language === 'zh'
-                ? styles.highlightedText
-                : styles.highlightedText
-            }
-          >
-            {content}
-          </Text>
-        );
-      } else {
-        return <Text key={index} style={styles.text}>{part}</Text>;
-      }
-    });
+    const firstDraftMatch = data.match(firstDraftRegex);
+    const revisedDraftMatch = data.match(revisedDraftRegex);
+    const explanationsMatch = data.match(explanationsRegex);
+
+    if (firstDraftMatch) {
+      sections['First Draft'] = firstDraftMatch[1].trim();
+    }
+
+    if (revisedDraftMatch) {
+      sections['Revised Draft'] = revisedDraftMatch[1].trim();
+    }
+
+    if (explanationsMatch) {
+      sections['Explanations for Improvements'] = explanationsMatch[1].trim();
+    }
+
+    return sections;
   };
 
-  // Helper function to render explanations in key-value format
-  const renderExplanations = (explanationsText: string) => {
-    if (!explanationsText) return null;
-    const explanations = explanationsText
-      .split(/\d+\.\s*/) // Split based on numbering like "1. ", "2. ", etc.
-      .filter((item) => item.trim() !== '');
-    return explanations.map((explanation, idx) => {
-      const match = explanation.match(/\*([^*]+)\*:\s*(.+)/s); // Match *text*: explanation
-      if (match) {
-        const key = match[1].trim();
-        const value = match[2].trim();
-        return (
-          <View key={idx} style={{ marginBottom: 5 }}>
-            <Text style={styles.listItem}>
-              <Text style={styles.listItemKey}>{key}:</Text> {value}
-            </Text>
-          </View>
-        );
-      } else {
-        return (
-          <View key={idx} style={{ marginBottom: 5 }}>
-            <Text style={styles.listItem}>{explanation}</Text>
-          </View>
-        );
-      }
-    });
+  const sections = extractSections(journalData);
+
+  // Function to parse explanations into an array of { key, explanation }
+  const parseExplanations = (explanationsText: string): Array<{ key: string; explanation: string }> => {
+    const explanations: Array<{ key: string; explanation: string }> = [];
+    const explanationRegex = /\*([^*]+)\*:\s*([^*].+)/g;
+    let match;
+
+    while ((match = explanationRegex.exec(explanationsText)) !== null) {
+      const key = match[1].trim();
+      const explanation = match[2].trim();
+      explanations.push({ key, explanation });
+    }
+
+    return explanations;
   };
+
+  const explanations = sections['Explanations for Improvements']
+    ? parseExplanations(sections['Explanations for Improvements'])
+    : [];
 
   return (
     <Document>
       <Page size="A4" style={{ ...styles.page, fontFamily }}>
-        {sections.map((section, index) => {
-          if (!section.includes(':')) {
-            console.warn(`Skipping section ${index} as it does not contain a colon: "${section}"`);
-            return null; // Skip sections without colon
-          }
-          if (section.startsWith('First Draft:')) {
-            const content = section.replace('First Draft:', '').trim();
-            console.log(`Rendering First Draft in PDF: "${content}"`);
-            return (
-              <View key={index} style={styles.section}>
-                <Text style={styles.heading}>First Draft</Text>
-                <Text style={styles.text}>{content}</Text>
+        {/* First Draft Section */}
+        {sections['First Draft'] && (
+          <View style={styles.section}>
+            <Text style={styles.heading}>First Draft</Text>
+            <Text style={styles.text}>{sections['First Draft']}</Text>
+          </View>
+        )}
+
+        {/* Revised Draft Section */}
+        {sections['Revised Draft'] && (
+          <View style={styles.section}>
+            <Text style={styles.heading}>Revised Draft</Text>
+            {renderTextWithHighlights(sections['Revised Draft'])}
+          </View>
+        )}
+
+        {/* Explanations for Improvements Section */}
+        {explanations.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.heading}>Explanations for Improvements</Text>
+            {explanations.map((item, index) => (
+              <View key={index} style={styles.listItem}>
+                <Text style={styles.listItemKey}>• {item.key}:</Text>
+                <Text style={styles.listItemValue}>{item.explanation}</Text>
               </View>
-            );
-          } else if (section.startsWith('Revised Draft')) {
-            // Handles both 'Revised Draft:' and 'Revised Draft with highlighted improvements:'
-            const content = section.split(':').slice(1).join(':').trim();
-            console.log(`Rendering Revised Draft in PDF: "${content}"`);
-            return (
-              <View key={index} style={styles.section}>
-                <Text style={styles.heading}>Revised Draft</Text>
-                {renderHighlightedText(content)}
-              </View>
-            );
-          } else if (section.startsWith('Explanations for Improvements:')) {
-            const explanationsText = section.replace('Explanations for Improvements:', '').trim();
-            console.log(`Rendering Explanations for Improvements in PDF: "${explanationsText}"`);
-            return (
-              <View key={index} style={styles.section}>
-                <Text style={styles.heading}>Explanations for Improvements</Text>
-                {renderExplanations(explanationsText)}
-              </View>
-            );
-          } else {
-            // Handle any other sections if present
-            console.warn(`Rendering generic section ${index} in PDF: "${section}"`);
-            return (
-              <View key={index} style={styles.section}>
-                <Text style={styles.text}>{section}</Text>
-              </View>
-            );
-          }
-        })}
+            ))}
+          </View>
+        )}
       </Page>
     </Document>
   );
 };
 
-export default JournalReport
+export default JournalReport;

@@ -10,6 +10,7 @@ interface MessageDisplayProps {
 const MessageDisplay: React.FC<MessageDisplayProps> = ({
   message,
 }) => {
+  
   return (
     <Box my={1}>
       <motion.div
@@ -21,7 +22,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = ({
           elevation={3}
           sx={{
             padding: '10px 15px',
-            maxWidth: '80%',
+            width:{xs:'95%',sm:'85%',md:'70%',lg:'60%'},
             backgroundColor: message.role === 'User' ? '#DCF8C6' : '#FFFFFF',
             alignSelf: message.role === 'User' ? 'flex-end' : 'flex-start',
           }}
