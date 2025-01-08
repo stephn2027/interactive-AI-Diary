@@ -29,6 +29,8 @@ import conversationData from '../assets/conversations/english.json';
 import { compareDraftAPI, getFeedback } from '../util/api';
 
 import JournalDataDisplay from './JournalDataDisplay';
+import JournalDisplay from './JournalDisplay';
+import JournalView from './JournalView';
 
 const ChatInterface: React.FC = () => {
   // Type assertion
@@ -549,7 +551,7 @@ const ChatInterface: React.FC = () => {
 
       {/* Journal Results Displayed After Hints  */}
       {isJournalButtonClicked && journalData && (
-        // <JournalDisplay journalData={journalData}/>
+        // <JournalView journalData={journalData}/>
         <JournalDataDisplay journalData={journalData} />
       )}
 

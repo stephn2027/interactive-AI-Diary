@@ -69,6 +69,8 @@ const styles = StyleSheet.create({
   listItemKey: {
     fontWeight: 'bold',
     color: '#00796B',
+    width:'40%',
+    flexWrap:'wrap',
   },
   listItemValue: {
     flex: 1,
@@ -166,9 +168,14 @@ const JournalReport: React.FC<JournalReportProps> = ({
     ? parseExplanations(sections['Explanations for Improvements'])
     : [];
 
+  const currentDate = new Date().toLocaleDateString();
+
   return (
     <Document>
       <Page size="A4" style={{ ...styles.page, fontFamily }}>
+      <View style={styles.section}>
+          <Text style={styles.text}>Date: {currentDate}</Text>
+        </View>
         {/* First Draft Section */}
         {sections['First Draft'] && (
           <View style={styles.section}>

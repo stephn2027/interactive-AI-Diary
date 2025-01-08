@@ -8,10 +8,14 @@ import {
   Box,
   Button,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import { pdf } from '@react-pdf/renderer';
 import JournalReport from './JournalReport'; // Ensure this component is correctly implemented
+import HighlightableTextWithPopover from './MobilePopover';
+
 
 // Define the props for the component
 interface JournalDataDisplayProps {
@@ -38,7 +42,17 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   language = 'en',
 }) => {
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // const [isHovered, setIsHovered] = useState(false);
 
+  // const handleTouchStart = (event: TouchEvent<HTMLSpanElement>) => {
+  //   setIsHovered(true);
+  //   event.preventDefault();
+  // };
+  // const handleTouchEnd = (event: TouchEvent<HTMLSpanElement>) => {
+  //   setIsHovered(false);
+  // };
   // PDF Generation Function
   const handleDownload = async () => {
     setLoading(true);
@@ -71,8 +85,6 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
 
   // Split the journalData into sections based on double newlines and trim each section
   const sections = journalData.split('\n\n').map((section) => section.trim());
-
-  console.log('Sections:', sections); // Debugging statement
 
   // Function to parse sections into header-content pairs
   const parseSections = (sections: string[]): ParsedSection[] => {
@@ -139,9 +151,7 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   };
 
   const parsedSections = parseSections(sections);
-  console.log('Parsed Sections:', parsedSections); // Debugging statement
 
-  
   const explanationsMap = useMemo(() => {
     const explanationsSection = parsedSections.find(
       (section) => section.header === 'Explanations for Improvements'
@@ -160,7 +170,7 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
     });
     return explanations;
   }, [parsedSections]);
-
+  
   // Helper function to render text with highlighted parts
   const renderHighlightedText = (text: string) => {
     if (!text) return null;
@@ -169,44 +179,92 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
     const regex = /(\*[^*]+\*)/g;
     const parts = text.split(regex);
 
-    console.log('Parts after splitting:', parts); // Debugging statement
+    // Render each part, highlighting the ones surrounded by asterisks
 
     return parts.map((part, index) => {
       if (part.startsWith('*') && part.endsWith('*')) {
         const content = part.slice(1, -1).trim(); // Remove asterisks and trim spaces
-        console.log(`Highlighting part ${index}:`, content); // Debugging statement
+        if(isMobile){
+          return (
+            <HighlightableTextWithPopover
+              key={index}
+              text={content}
+              detailText={explanationsMap[content]||'No explanation available'}
+            />
+          );
+        }else{
         return (
-            <Tooltip
+          <Tooltip
             key={index}
             title={explanationsMap[content] || 'No explanation available'}
             arrow
-            placement='top'
+            placement="top"
             PopperProps={{
-                modifiers: [
-                  {
-                    name: 'flip',
-                    options: {
-                      fallbackPlacements: ['top', 'bottom', 'left', 'right'],
+              modifiers: [
+                {
+                  name: 'flip',
+                  options: {
+                    fallbackPlacements: ['top', 'bottom', 'left', 'right'],
+                  },
+                },
+                {
+                  name: 'preventOverflow',
+                  options: {
+                    boundary: 'none', // Ensure the tooltip stays within the viewport
+                  },
+                },
+              ],
+            }}
+
+            slotProps={{
+              tooltip: {
+                sx: {
+                  fontSize: '.9rem', // Increase font size
+                  padding: '1rem', 
+                 maxWidth: '25rem', // Increase padding and width
+                },
+              },
+              arrow: {
+                sx: {
+                  fontSize: '1rem',   // Increase arrow size
+                },
+              },
+            }}
+          >
+            <Typography
+              component="span"
+              key={index}
+              // onTouchStart={handleTouchStart}
+              // onTouchEnd={handleTouchEnd}
+              sx={{
+                color: 'primary.main',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'inline-block',
+                transition: 'transform 0.3s ease',
+                borderRadius: 2,
+                padding: '0.1rem 0.3rem',
+                '&:hover': {
+                  textDecoration: 'underline',
+                  transform: 'scale(1.05)',
+                  '@media (hover: none)': {
+                    '&:active': {
+                      textDecoration: 'underline',
+                      transform: 'scale(1.05)',
                     },
                   },
-                  {
-                    name: 'preventOverflow',
-                    options: {
-                      boundary: 'none', // Ensure the tooltip stays within the viewport
-                    },
-                  },
-                ],
+                },
+                // ...(isHovered && {
+                //   textDecoration: 'underline',
+                //   transform: 'scale(1.05)',
+                // }),
               }}
             >
-          <Typography
-            component="span"
-            key={index}
-            sx={{ color: 'primary.main', fontWeight: 'bold', cursor:'pointer',display:'inline-block'}}
-          >
-            {content}
-          </Typography>
+              {content}
+            </Typography>
           </Tooltip>
         );
+      }
       } else {
         return <span key={index}>{part}</span>;
       }
@@ -301,7 +359,11 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
               </Typography>
               <Typography
                 variant="body1"
-                sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic',paddingInline:6}}
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  fontStyle: 'italic',
+                  paddingInline: 6,
+                }}
               >
                 {content}
               </Typography>
@@ -315,7 +377,10 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
               <Typography variant="h6" gutterBottom>
                 Revised Draft
               </Typography>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', paddingInline:6 }}>
+              <Typography
+                variant="body1"
+                sx={{ whiteSpace: 'pre-wrap', paddingInline: 6 }}
+              >
                 {renderHighlightedText(content)}
                 {/* {content} */}
               </Typography>
