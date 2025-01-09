@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { FeedbackResponse } from './types';
+import english from '../assets/conversations/english.json';
+import japanese from '../assets/conversations/japanese.json';
+
 const dev = true;
 const BASE_URL = dev
   ? 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/dev'
   : 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/beta';
 
-const SAVE_AUDIO_URL = 'https://kkunnx02n7.execute-api.ap-northeast-1.amazonaws.com/dev';
+// const SAVE_AUDIO_URL = 'https://kkunnx02n7.execute-api.ap-northeast-1.amazonaws.com/dev';
 
 export const getFeedback = async (draftText:string):Promise<FeedbackResponse> => {
   try {
@@ -82,3 +85,24 @@ export const compareDraftAPI = async (initial:string|null,final:string|null) =>{
     throw error;
   }
 }
+
+export const generateImageAPI = async (finalDraft:string) =>{
+  try {
+    console.log("Sending text to generate image");
+    const response = await axios.post(`${BASE_URL}/generateimage`,{finalDraft:finalDraft});
+    return response.data;
+  } catch (error) {
+    console.log("Error calling generateImage API ", error);
+    throw error;
+  }
+}
+
+export const getDialogueJSON = async (language: string) => {
+  if (language === 'en') {
+    return english;
+  }
+  if (language === 'ja') {
+    return japanese;
+  }
+  
+};

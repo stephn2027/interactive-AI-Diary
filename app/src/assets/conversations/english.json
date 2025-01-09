@@ -4,6 +4,7 @@
     "title": "Buying a Product",
     "setting": "Shopping Experience",
     "speaker": "User",
+    "romanized":false,
     "dialogue": [
       {
         "id": 0,

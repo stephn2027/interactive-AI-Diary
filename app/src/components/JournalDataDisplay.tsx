@@ -391,14 +391,14 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
           console.log(
             `Rendering Explanations for Improvements: "${explanationsText}"`
           );
-          return (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Explanations for Improvements
-              </Typography>
-              {renderExplanations(explanationsText)}
-            </Box>
-          );
+          // return (
+          //   <Box key={index} sx={{ mb: 3 }}>
+          //     <Typography variant="h6" gutterBottom>
+          //       Explanations for Improvements
+          //     </Typography>
+          //     {renderExplanations(explanationsText)}
+          //   </Box>
+          // );
         } else {
           // Handle any other sections if present
           return (

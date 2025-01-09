@@ -67,14 +67,14 @@ functions:
           method: post
           path: feedback
           cors: true
-  # generateAudio:
-  #   handler: generateAudio.handler
-  #   role: arn:aws:iam::105150981739:role/service-role/generateAudio
-  #   events:
-  #     - http:
-  #         method: post
-  #         path: generateAudio
-  #         cors: true
+  generateImage:
+    handler: generateImage.handler
+    role: arn:aws:iam::105150981739:role/service-role/generateAudio
+    events:
+      - http:
+          method: post
+          path: generateimage
+          cors: true
   compareDraft:
     handler: compareDraft.handler
     role: arn:aws:iam::105150981739:role/service-role/generateAudio

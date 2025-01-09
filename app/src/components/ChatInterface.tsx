@@ -12,6 +12,8 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
+  Card,
+  CardMedia,
 } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
@@ -26,17 +28,21 @@ import {
   Feedback,
 } from '../util/types';
 import conversationData from '../assets/conversations/english.json';
-import { compareDraftAPI, getFeedback } from '../util/api';
-
+import {
+  compareDraftAPI,
+  getFeedback,
+  generateImageAPI,
+  getDialogueJSON,
+} from '../util/api';
 import JournalDataDisplay from './JournalDataDisplay';
-import JournalDisplay from './JournalDisplay';
-import JournalView from './JournalView';
+import LanguageSelector from './LanguageSelector';
+import ConversationSelector from './ConversationSelector';
 
 const ChatInterface: React.FC = () => {
-  // Type assertion
-  const conversations: Conversation[] = conversationData as Conversation[];
-
   // State declarations
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  //chat states
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentDialogueIndex, setCurrentDialogueIndex] = useState<number>(0);
   const [showHint, setShowHint] = useState<boolean>(false);
@@ -62,45 +68,81 @@ const ChatInterface: React.FC = () => {
     useState<boolean>(false);
   const [postSubmissionLoading, setPostSubmissionLoading] =
     useState<boolean>(false);
-  // Ref for scrolling to bottom
+  const [imageURL, setImageURL] = useState<string | null>(null);
+  // Refs
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Select the current conversation
-  const selectedConversation = conversations.find(
-    (conv) => conv.id === selectedConversationId
-  );
-
-  // Destructure properties if conversation exists
-  const { title, setting, speaker } = selectedConversation || {};
-
-  const isInputDisabled = userMessageCount === 4;
+  useEffect(() => {
+    const fetchConversationData = async () => {
+      // Fetch conversation data based on the selected language
+      try {
+        const data = await getDialogueJSON(selectedLanguage);
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.error('Invalid conversation data');
+          setConversations([]);
+          return;
+        }
+        setConversations(data as Conversation[]);
+        setSelectedConversationId(data[0].id);
+      } catch (error) {
+        console.error('Error fetching conversation data:', error);
+      }
+    };
+    fetchConversationData();
+  }, [selectedLanguage]);
+  // Reset chat state when conversation changes
+  const resetChatState = () => {
+    setMessages([]);
+    setCurrentDialogueIndex(0);
+    setShowHint(false);
+    setInitialDraft(null);
+    setUserFinalDraft(null);
+    setIsJournalButtonCliked(false);
+    setJournalData(null);
+    setUserMessageCount(0);
+    setHasRevisedMessageShown(false);
+    setLoading(false);
+    setFeedbackLoading(false);
+    setPostSubmissionLoading(false);
+    setImageURL(null);
+    setUserInputs([]);
+  };
 
   // Initialize the first system message on component mount and when conversation changes
   useEffect(() => {
-    if (selectedConversation && selectedConversation.dialogue.length > 0) {
-      const firstSystemDialogue = selectedConversation.dialogue[0];
-      const firstSystemMessage: Message = {
-        id: firstSystemDialogue.id,
-        role: firstSystemDialogue.role,
-        content: firstSystemDialogue.content,
-        hint: firstSystemDialogue.hint || null,
-      };
-      setMessages([firstSystemMessage]);
-      setCurrentDialogueIndex(0);
-      setShowHint(false);
-      setInitialDraft(null);
-      setUserFinalDraft(null);
-      setIsJournalButtonCliked(false);
-      setJournalData(null);
-      setUserMessageCount(0);
-      setHasRevisedMessageShown(false);
-    } else {
-      // Handle the case where there's no dialogue
-      setMessages([]);
+    // We can only do setup if we have a valid conversation ID and
+    // the conversations array is loaded
+    if (!selectedConversationId || conversations.length === 0) {
+      return;
     }
-  }, [selectedConversation]);
+    // Find the selected conversation
+    const selectedConv = conversations.find(
+      (conv) => conv.id === selectedConversationId
+    );
+    if (!selectedConv || selectedConv.dialogue.length === 0) {
+      setMessages([]);
+      return;
+    }
 
+    // Initialize the chat with the first system message
+    const firstSystemDialogue = selectedConv.dialogue[0];
+    const firstSystemMessage: Message = {
+      id: firstSystemDialogue.id,
+      role: firstSystemDialogue.role,
+      content: firstSystemDialogue.content,
+      hint: firstSystemDialogue.hint || null,
+    };
+    setMessages([firstSystemMessage]);
+    setCurrentDialogueIndex(0);
+    setShowHint(false);
+    setIsJournalButtonCliked(false);
+    setJournalData(null);
+    setUserMessageCount(0);
+    setHasRevisedMessageShown(false);
+    // userInputs etc. remain reset
+  }, [selectedConversationId, conversations]);
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
     if (endOfMessagesRef.current) {
@@ -110,15 +152,18 @@ const ChatInterface: React.FC = () => {
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-      scrollToBottom();
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+    scrollToBottom();
   }, [messages]);
 
   // Handler for sending a message
   const handleSendMessage = async () => {
-    if (currentInput.trim() === '' || !selectedConversation) return;
+    const selectedConv = conversations.find(
+      (conv) => conv.id === selectedConversationId
+    );
+    if (currentInput.trim() === '' || !selectedConv) return;
     const userMessageContent = currentInput.trim();
     // Append user's message
     const userMessage: Message = {
@@ -140,21 +185,21 @@ const ChatInterface: React.FC = () => {
     }
     setCurrentInput('');
 
-    if(inputRef.current){
+    if (inputRef.current) {
       inputRef.current.focus();
-    };
+    }
 
     if (userMessageCount === 4) {
       return;
     }
 
     // Proceed to the next system message within the same conversation
-    if (currentDialogueIndex + 1 < selectedConversation.dialogue.length) {
+    if (currentDialogueIndex + 1 < selectedConv.dialogue.length) {
       setLoading(true);
       // Simulate delay for system response
       setTimeout(() => {
         const nextSystemDialogue =
-          selectedConversation.dialogue[currentDialogueIndex + 1];
+          selectedConv.dialogue[currentDialogueIndex + 1];
         if (nextSystemDialogue) {
           const systemMessage: Message = {
             id: nextSystemDialogue.id,
@@ -220,12 +265,6 @@ const ChatInterface: React.FC = () => {
           feedback: structuredFeedback,
           hint: null,
         };
-        const SAMPLEfeedbackMessage: Message = {
-          id: Date.now() + 1,
-          role: 'System',
-          content: 'feedback from API',
-          hint: null,
-        };
 
         const reviseMessage: Message = {
           id: Date.now() + 2, // Ensure unique ID
@@ -240,6 +279,7 @@ const ChatInterface: React.FC = () => {
       // Optionally, reset user inputs after feedback
       setUserInputs([]);
     } catch (error) {
+      console.error('Error fetching feedback:', error);
       // Handle errors during feedback retrieval
       const errorMessage: Message = {
         id: Date.now() + 4,
@@ -289,20 +329,21 @@ const ChatInterface: React.FC = () => {
   };
 
   // Handler to change conversation
-  const handleConversationChange = (
-    event: SelectChangeEvent<string>,
-    child: React.ReactNode
-  ) => {
+  const handleConversationChange = (event: SelectChangeEvent<string>) => {
     const newConversationId = event.target.value as string;
+    resetChatState();
     setSelectedConversationId(newConversationId);
-    setUserInputs([]);
+  };
+  const handleLanguageChange = (event: SelectChangeEvent<string>) => {
+    const newLanguage = event.target.value;
+    resetChatState();
+    setSelectedLanguage(newLanguage);
   };
 
   //handler to submit final draft
   const handleSubmitFinalDraft = async () => {
     if (userMessageCount === 4) {
       const finalDraft = userInputs[userInputs.length - 1];
-
       if (!finalDraft) {
         console.error(
           'Final draft is undefined. Check userInputs:',
@@ -350,7 +391,7 @@ const ChatInterface: React.FC = () => {
     initial: string | null,
     final: string | null
   ) => {
-    setPostSubmissionLoading(true)
+    setPostSubmissionLoading(true);
     try {
       const comparedDraftData = await compareDraftAPI(initial, final);
       console.log('Journal: ', comparedDraftData);
@@ -365,23 +406,33 @@ const ChatInterface: React.FC = () => {
       // setMessages((prev) => [...prev, comparisonMessage]);
     } catch (error) {
       console.log('Error comparing drafts', error);
-    } finally {  
-      setPostSubmissionLoading(false)
+    } finally {
+      setPostSubmissionLoading(false);
     }
   };
   // Handler for adding an image
   const handleAddImage = async () => {
     setPostSubmissionLoading(true); // Start loading
     try {
-        // TODO: Implement image addition logic here
-        console.log('Add Image button clicked');
-        // Simulate async operation
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      // TODO: Implement image addition logic here
+      console.log('Add Image button clicked');
+      // check if userFinalDraft is empty
+      if (!userFinalDraft) {
+        console.log('User final draft is empty');
+        return;
+      }
+      //call the api to generate image
+      // const data = await generateImageAPI(userFinalDraft);
+      // if (data && data.success && data.imageUrl) {
+      //   setImageURL(data.imageUrl);
+      // } else {
+      //   console.error('Unable to retrieve image URL from serverless function');
+      // }
     } catch (error) {
-        console.error('Error adding image:', error);
-        // Optionally, add error handling messages here
+      console.error('Error adding image:', error);
+      // Optionally, add error handling messages here
     } finally {
-        setPostSubmissionLoading(false); // Stop loading
+      setPostSubmissionLoading(false); // Stop loading
     }
   };
 
@@ -389,15 +440,15 @@ const ChatInterface: React.FC = () => {
   const handleSendLetter = async () => {
     setPostSubmissionLoading(true); // Start loading
     try {
-        // TODO: Implement letter sending logic here
-        console.log('Send Letter button clicked');
-        // Simulate async operation
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      // TODO: Implement letter sending logic here
+      console.log('Send Letter button clicked');
+      // Simulate async operation
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
-        console.error('Error sending letter:', error);
-        // Optionally, add error handling messages here
+      console.error('Error sending letter:', error);
+      // Optionally, add error handling messages here
     } finally {
-        setPostSubmissionLoading(false); // Stop loading
+      setPostSubmissionLoading(false); // Stop loading
     }
   };
 
@@ -406,7 +457,7 @@ const ChatInterface: React.FC = () => {
     try {
       await initiateDraftComparison(initialDraft, userFinalDraft);
       setIsJournalButtonCliked(true);
-    console.log('Open Diary button clicked');
+      console.log('Open Diary button clicked');
     } catch (error) {
       console.error('Error opening diary:', error);
     }
@@ -430,13 +481,18 @@ const ChatInterface: React.FC = () => {
       onClick: handleSendLetter, // Define this handler
     },
   ];
+  const selectedConv = conversations.find(
+    (conv) => conv.id === selectedConversationId
+  );
+  const { title, setting, speaker } = selectedConv || {};
+  const isInputDisabled = userMessageCount === 4;
 
   return (
     <Box
       sx={{ display: 'flex', flexDirection: 'column', height: '100%', mb: 6 }}
     >
       {/* Chat Description */}
-      {selectedConversation && (
+      {selectedConv && (
         <ChatDescription
           title={title || ''}
           setting={setting || ''}
@@ -445,24 +501,9 @@ const ChatInterface: React.FC = () => {
       )}
 
       {/* Conversation Selector */}
-      <Box sx={{ mb: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel id="conversation-selector-label">
-            Select Conversation
-          </InputLabel>
-          <Select
-            labelId="conversation-selector-label"
-            value={selectedConversationId}
-            label="Select Conversation"
-            onChange={handleConversationChange}
-          >
-            {conversations.map((conv) => (
-              <MenuItem key={conv.id} value={conv.id}>
-                {conv.title}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <Box sx={{ display:'flex', gap:2, mb: 2 }}>
+        {/* <LanguageSelector selectedLanguage={selectedLanguage} handleLanguageChange={handleLanguageChange}/> */}
+        <ConversationSelector selectedConversationId={selectedConversationId} handleConversationChange={handleConversationChange} conversations={conversations}/>   
       </Box>
 
       {/* Messages Display */}
@@ -540,19 +581,42 @@ const ChatInterface: React.FC = () => {
           />
         )}
       </Box>
-      {(isFeedbackLoading||postSubmissionLoading)&& (
-            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body2" color="textSecondary">
-                Fetching results...
-              </Typography>
-              <CircularProgress size={20} sx={{ ml: 1 }} />
-            </Box>
-          )}
+      {(isFeedbackLoading || postSubmissionLoading) && (
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" color="textSecondary">
+            Fetching results...
+          </Typography>
+          <CircularProgress size={20} sx={{ ml: 1 }} />
+        </Box>
+      )}
 
       {/* Journal Results Displayed After Hints  */}
       {isJournalButtonClicked && journalData && (
         // <JournalView journalData={journalData}/>
         <JournalDataDisplay journalData={journalData} />
+      )}
+
+      {/* Display Image */}
+      {imageURL && (
+        <Box
+          sx={{
+            mx: 'auto',
+            mt: 2,
+            maxWidth: '100%',
+            height: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Card>
+            <CardMedia
+              component="img"
+              image={imageURL}
+              alt="Generated Image"
+              sx={{ objectFit: 'contain' }}
+            />
+          </Card>
+        </Box>
       )}
 
       {/* Show Hint Button */}
@@ -651,7 +715,7 @@ const ChatInterface: React.FC = () => {
             </Typography>
           )}
           {/* Display feedback loading indicator */}
-         
+
           {isFinalDraftSubmitted && userFinalDraft && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body1" color="green">
