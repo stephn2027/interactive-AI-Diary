@@ -68,12 +68,14 @@ export const initializeConversation = async (topic: string, setting: string) => 
  * @param draftText - The user's draft text.
  * @returns A promise that resolves to a FeedbackResponse.
  */
-export const getDynamicFeedback = async (draftText: string): Promise<FeedbackResponse> => {
+export const getDynamicFeedback = async (draftText: string,topic:string,setting:string): Promise<FeedbackResponse> => {
   try {
     console.log('Sending draft to API for feedback:', draftText);
     const response = await axios.post(`${BASE_URL}/dynamicguidance`, {
       action: 'feedback',
       draftText,
+      topic,
+      setting,
     });
     if (response.status === 200) {
       return response.data as FeedbackResponse;

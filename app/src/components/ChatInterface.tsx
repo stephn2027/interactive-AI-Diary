@@ -165,17 +165,21 @@ const ChatInterface: React.FC = () => {
     }
     if (isFinalDraftSubmitted) return;
     //Send the draft to the backend for feedback
+    // if(!selectedConv){
+    //   console.error('Selected conversation is undefined');
+    //   return;
+    // }
     try {
       setFeedbackLoading(true);
       setAllCriteriaMet(false);
       const feedbackResponse: FeedbackResponse = await getDynamicFeedback(
-        userMessageContent
+        userMessageContent,selectedConv!.setting,selectedConv!.topic
       );
       //append the feedback as system messages
       const feedbackMessage: Message = {
         id: Date.now() + 1,
         role: 'System',
-        content: `Classification: ${feedbackResponse.classification}\nFeedback: ${feedbackResponse.feedback}`,
+        content: ` ${feedbackResponse.classification}\nFeedback: ${feedbackResponse.feedback}`,
       };
       setMessages((prev) => [...prev, feedbackMessage]);
      
@@ -300,13 +304,13 @@ const ChatInterface: React.FC = () => {
     return;
     }
     setIsFinalDraftSubmitted(true);
-    const submissionMessage: Message = {
-      id: Date.now() + 3,
-      role: 'System',
-      content: "You’ve reached 3 sentences—great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.",
+    // const submissionMessage: Message = {
+    //   id: Date.now() + 3,
+    //   role: 'System',
+    //   content: "You’ve reached 3 sentences—great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.",
       
-    }
-    setMessages((prev) => [...prev, submissionMessage]);
+    // }
+    // setMessages((prev) => [...prev, submissionMessage]);
   };
   //automatically submit the final draft when set
   

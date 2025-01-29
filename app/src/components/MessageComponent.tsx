@@ -11,10 +11,7 @@ interface MessageComponentProps {
   isLoading?: boolean;
 }
 
-const MessageComponent: React.FC<MessageComponentProps> = ({
-  message,
-  isLoading = false,
-}) => {
+const MessageComponent: React.FC<MessageComponentProps> = ({ message }) => {
   const isUser = message.role === 'User';
   const timestamp = dayjs(message.id).format('HH:mm');
 
@@ -66,41 +63,26 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
             }}
           >
             {/* Render Markdown Content */}
-          {/* Render Feedback if available */}
-          {message.feedback ? (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  {message.feedback.title}
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                {message.feedback.items.map((item, index) => (
-                  <Box key={index} sx={{ mb: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                      {item.category}:
-                    </Typography>
-                    <Typography variant="body1" sx={{ ml: 2 }}>
-                      {item.value}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                {message.content}
-              </Typography>
-            )}
+            {/* Render Feedback if available */}
+
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </Typography>
+
             {isUser && (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}
+              >
                 <Typography variant="caption" color="textSecondary">
                   {timestamp}
                 </Typography>
               </Box>
             )}
-            {!isUser && isLoading && (
+            {/* {!isUser && isLoading && (
               <Typography variant="caption" color="textSecondary">
                 Typing...
               </Typography>
-            )}
+            )} */}
           </Paper>
         </motion.div>
       </Box>

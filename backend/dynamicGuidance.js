@@ -1,7 +1,6 @@
-import axios from 'axios';
-import {v4 as uuidv4} from 'uuid'; 
+import axios, { all } from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 // Ensure to install uuid: npm install uuid
-
 
 export const handler = async (event) => {
   // Define CORS and Content-Type headers
@@ -41,14 +40,18 @@ export const handler = async (event) => {
         headers,
       };
     }
-
+    const systemPrompt = `
+    You are an educational writing assistant dedicated to guiding beginners through writing exercises.`;
     // Construct the prompt for OpenAI to generate the initial system message
-    const prompt = `
-    You are an educational writing assistant guiding beginners through writing exercises.
-    Based on the following topic and setting, generate the first system message instruction.
+    const userPrompt = `
+
+    Generate the first system message instruction based on the following topic and setting.
 
     **Topic:** ${topic}
     **Setting:** ${setting}
+    **Instructions:**
+    - The draft should be at least 3 sentences long.
+    - The draft should have clear, coherent sentences that effectively communicate basic ideas.
 
     **Format:**
     \`\`\`json
@@ -59,6 +62,8 @@ export const handler = async (event) => {
 
     }
     \`\`\`
+
+
     `;
 
     try {
@@ -67,8 +72,8 @@ export const handler = async (event) => {
         {
           model: 'o1-2024-12-17', // Ensure you have access to the GPT-4 model
           messages: [
-            { role: 'system', content: 'You are a helpful assistant.' },
-            { role: 'user', content: prompt },
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
           ],
         },
         {
@@ -125,15 +130,21 @@ export const handler = async (event) => {
     }
   } else if (action === 'feedback') {
     // **Handle Real-Time Feedback Based on User Input**
-    const { draftText } = parsedEvent;
+    const { draftText, topic, setting } = parsedEvent;
 
     // Validate required parameters
     if (
       !draftText ||
       typeof draftText !== 'string' ||
-      draftText.trim().length === 0
+      draftText.trim().length === 0 ||
+      !topic ||
+      typeof topic !== 'string' ||
+      topic.trim().length === 0 ||
+      !setting ||
+      typeof setting !== 'string' ||
+      setting.trim().length === 0
     ) {
-      console.error('Draft text must be a non-empty string');
+      console.error('Draft text,topic,setting must be a non-empty string');
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -145,22 +156,27 @@ export const handler = async (event) => {
 
     // Define completion criteria
     const criteria = [
+      'The draft should be relevant to the specified topic.',
+      'The draft should accurately reflect the given setting.',
       'The draft should be at least 3 sentences long.',
       'The draft should have clear, coherent sentences that effectively communicate basic ideas.',
       'Basic sentences are grammatically correct with minimal errors.',
     ];
-
+    const systemPrompt = `
+    You are an educational writing assistant that provides constructive, clear, and actionable feedback to help learners improve their written drafts.
+    `;
     // Construct the prompt for OpenAI to generate feedback
-    const prompt = `
-    You are an educational writing assistant providing iterative feedback to help learners improve their drafts.
+    const userPrompt = `
+    
     Based on the user's draft, evaluate it against the following completion criteria and provide clear and actionable feedback.
 
     **User Draft:**
     "${draftText}"
-
+    **Topic:** ${topic}
+    **Setting:** ${setting}
     **Completion Criteria:**
     ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
-
+    **Ensure Relevance:** Feedback should address both the topic and setting of the draft.
     **User Input Classification Scenarios:**
     - **On-Track Input:** Completely relevant and meets criteria.
     - **Partially On-Track Input:** Minimal content but relevant.
@@ -198,9 +214,9 @@ export const handler = async (event) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful educational assistant.',
+              content: systemPrompt,
             },
-            { role: 'user', content: prompt },
+            { role: 'user', content: userPrompt },
           ],
         },
         {
@@ -224,10 +240,26 @@ export const handler = async (event) => {
         formattedResponse = JSON.parse(aiResponse);
 
         // Validate required fields in the response
-        const { classification, feedback, allCriteriaMet } =
-          formattedResponse;
-        if (typeof classification !== 'string' || typeof feedback !=='string' || typeof allCriteriaMet !== 'boolean') {
+        const { classification, feedback, allCriteriaMet } = formattedResponse;
+        if (
+          typeof classification !== 'string' ||
+          typeof feedback !== 'string' ||
+          typeof allCriteriaMet !== 'boolean'
+        ) {
           throw new Error('Missing required fields in feedback response.');
+        }
+
+        if (allCriteriaMet) {
+          const congratulatoyMessage = `Great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.`;
+
+          if (
+            formattedResponse.feedback &&
+            formattedResponse.feedback.trim().length > 0
+          ) {
+            formattedResponse.feedback += `\n\n${congratulatoryMessage}`;
+          } else {
+            formattedResponse.feedback = congratulatoryMessage;
+          }
         }
         return {
           statusCode: 200,
