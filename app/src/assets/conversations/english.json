@@ -1,87 +1,16 @@
 [
-    {
-    "id": "computerShopping",
+  {
+    "id": "buyingProduct",
     "title": "Buying a Product",
-    "setting": "Shopping Experience",
-    "speaker": "User",
-    "romanized":false,
-    "dialogue": [
-      {
-        "id": 0,
-        "role": "System",
-        "content": "Let's brainstorm! First tell me what you want to buy?",
-        "hint": [
-          "What will you buy?",
-          "What will you ask the staff?",
-          "How do you choose what you buy?",
-          "Example: - I want to buy a computer. -Do you have a XYZ model computer? - I choose a lightweight and fast computer."
-        ]
-      },
-      {
-        "id": 1,
-        "role": "System",
-        "content": "Great! Let's organize your ideas into a simple structure. Please write the outline in 3 stages: Beginning, middle, end.",
-        "hint": [
-          "Beginning: Why were you at the store?",
-          "Middle: What did you talk about with the staff",
-          "End: What did you choose?"
-        ]
-      },
-      {
-        "id": 2,
-        "role": "System",
-        "content": "Perfect! let's turn this into a Draft.",
-        "hint": [
-          "Sample draft: Yesterday, I went to …… I asked…..I chose…because….."
-        ]
-      },
-      {
-        "id": 3,
-        "role": "System",
-        "content": "Nice Work! Let's make a few changes."
-      }
-    ]
+    "setting": "Describe your latest shopping experience. What did you buy? How was your interaction with the staff? How did you make your choice?",
+    "topic": "Purchase a computer",
+    "speaker": "User"
   },
   {
     "id": "introducingYourself",
     "title": "Introducing Yourself",
-    "setting": "Self-Introduction",
-    "speaker": "User",
-    "dialogue": [
-      {
-        "id": 0,
-        "role": "System",
-        "content": "Let's brainstorm! First, tell me a bit about yourself.",
-        "hint": [
-          "Where are you from?",
-          "What are your hobbies?",
-          "What do you do for a living?",
-          "Example: - I'm from New York. - I enjoy painting and hiking. - I work as a graphic designer."
-        ]
-      },
-      {
-        "id": 1,
-        "role": "System",
-        "content": "Great! Let's organize your ideas into a simple structure. Please write the outline in 3 stages: Beginning, Middle, End.",
-        "hint": [
-          "Beginning: How will you start your introduction?",
-          "Middle: What are the main points you want to share?",
-          "End: How will you conclude your introduction?"
-        ]
-      },
-      {
-        "id": 2,
-        "role": "System",
-        "content": "Perfect! Let's turn this into a draft.",
-        "hint": [
-          "Sample draft: Hi, I'm Jane Doe from New York. I enjoy painting and hiking. I work as a graphic designer. Nice to meet you!"
-        ]
-      },
-      {
-        "id": 3,
-        "role": "System",
-        "content": "Nice work! Let's make a few changes to refine your introduction."
-      }
-    ]
+    "setting": "Write a brief introduction about yourself. Where are you from? What are your hobbies? What do you do for a living?",
+    "topic": "Self Introduction",
+    "speaker": "User"
   }
 ]

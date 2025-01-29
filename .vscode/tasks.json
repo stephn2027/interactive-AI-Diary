@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"label": "npm: build",
+			"detail": "Build the project",
+			"presentation": {
+				"reveal": "silent"
+			}
+		}
+	]
+}

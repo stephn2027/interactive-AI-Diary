@@ -4,7 +4,7 @@ import React from 'react'
 interface ConversationSelectorProps { 
     selectedConversationId: string;
     handleConversationChange: (event: SelectChangeEvent<string>) => void;
-    conversations: { id: string; title: string }[];
+    conversations: { id: string; title: string,topic:string }[];
 }
 
 export default function ConversationSelector({selectedConversationId,handleConversationChange,conversations}:ConversationSelectorProps) {
@@ -21,7 +21,7 @@ export default function ConversationSelector({selectedConversationId,handleConve
           >
             {conversations.map((conv) => (
               <MenuItem key={conv.id} value={conv.id}>
-                {conv.title}
+                {conv.topic}
               </MenuItem>
             ))}
           </Select>

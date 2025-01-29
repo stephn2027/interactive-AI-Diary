@@ -59,13 +59,13 @@ httpApi:
       - DELETE
 
 functions:
-  getFeedback:
-    handler: getFeedback.handler
+  dynamicGuidance:
+    handler: dynamicGuidance.handler
     role: arn:aws:iam::105150981739:role/service-role/generateAudio
     events:
       - http:
           method: post
-          path: feedback
+          path: dynamicguidance
           cors: true
   generateImage:
     handler: generateImage.handler

@@ -15,6 +15,7 @@
     "dotenv": "^16.4.5",
     "openai": "^4.77.3",
     "serverless-plugin-common-excludes": "^4.0.0",
-    "serverless-plugin-include-dependencies": "^6.1.1"
+    "serverless-plugin-include-dependencies": "^6.1.1",
+    "uuid": "^11.0.5"
   }
 }
