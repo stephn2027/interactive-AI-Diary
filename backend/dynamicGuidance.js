@@ -62,7 +62,15 @@ export const handler = async (event) => {
 
     }
     \`\`\`
-
+    
+    **Sample Output:**
+    \`\`\`json
+    {
+    "id": "${uuidv4()}",
+    "role": "System",
+    "content": "Your task is to write a short draft describing your latest experience shopping for a computer. Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience.",
+    }
+    \`\`\`
 
     `;
 
@@ -250,7 +258,7 @@ export const handler = async (event) => {
         }
 
         if (allCriteriaMet) {
-          const congratulatoyMessage = `Great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.`;
+          const congratulatoryMessage = `Great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.`;
 
           if (
             formattedResponse.feedback &&

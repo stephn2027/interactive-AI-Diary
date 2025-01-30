@@ -17,11 +17,7 @@ import BookIcon from '@mui/icons-material/BookOnlineSharp';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
-import {
-  Message,
-  Conversation,
-  FeedbackResponse,
-} from '../util/types';
+import { Message, Conversation, FeedbackResponse } from '../util/types';
 import {
   compareDraftAPI,
   getDynamicFeedback,
@@ -173,7 +169,9 @@ const ChatInterface: React.FC = () => {
       setFeedbackLoading(true);
       setAllCriteriaMet(false);
       const feedbackResponse: FeedbackResponse = await getDynamicFeedback(
-        userMessageContent,selectedConv!.setting,selectedConv!.topic
+        userMessageContent,
+        selectedConv!.setting,
+        selectedConv!.topic
       );
       //append the feedback as system messages
       const feedbackMessage: Message = {
@@ -182,9 +180,9 @@ const ChatInterface: React.FC = () => {
         content: ` ${feedbackResponse.classification}\nFeedback: ${feedbackResponse.feedback}`,
       };
       setMessages((prev) => [...prev, feedbackMessage]);
-     
+
       //check if all criteria are met
-      console.log("all criteria met: ",feedbackResponse.allCriteriaMet);
+      console.log('all criteria met: ', feedbackResponse.allCriteriaMet);
       if (feedbackResponse.allCriteriaMet) {
         setUserFinalDraft(userMessageContent);
         setAllCriteriaMet(true);
@@ -285,7 +283,7 @@ const ChatInterface: React.FC = () => {
       handleSendMessage();
     }
   };
-  
+
   // Handler to change conversation
   const handleConversationChange = (event: SelectChangeEvent<string>) => {
     const newConversationId = event.target.value as string;
@@ -298,23 +296,21 @@ const ChatInterface: React.FC = () => {
     setSelectedLanguage(newLanguage);
   };
   //handler to submit final draft
-  const handleSubmitFinalDraft = async (finalDraft:string) => {
-    if(!finalDraft) {
-    console.error('Final draft is undefinded');
-    return;
+  const handleSubmitFinalDraft = async (finalDraft: string) => {
+    if (!finalDraft) {
+      console.error('Final draft is undefinded');
+      return;
     }
     setIsFinalDraftSubmitted(true);
     // const submissionMessage: Message = {
     //   id: Date.now() + 3,
     //   role: 'System',
     //   content: "You’ve reached 3 sentences—great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.",
-      
+
     // }
     // setMessages((prev) => [...prev, submissionMessage]);
   };
   //automatically submit the final draft when set
-  
-
 
   // const handleReviseFinalDraft = () => {
   //   if (userMessageCount === 4) {
@@ -336,7 +332,7 @@ const ChatInterface: React.FC = () => {
   //     }
   //   }
   // };
- 
+
   const initiateDraftComparison = async (
     initial: string | null,
     final: string | null
@@ -372,12 +368,13 @@ const ChatInterface: React.FC = () => {
         return;
       }
       // call the api to generate image
-      const data = await generateImageAPI(userFinalDraft);
-      if (data && data.success && data.imageUrl) {
-        setImageURL(data.imageUrl);
-      } else {
-        console.error('Unable to retrieve image URL from serverless function');
-      }
+      console.log('Handle add image has been clicked');
+      // const data = await generateImageAPI(userFinalDraft);
+      // if (data && data.success && data.imageUrl) {
+      //   setImageURL(data.imageUrl);
+      // } else {
+      //   console.error('Unable to retrieve image URL from serverless function');
+      // }
     } catch (error) {
       console.error('Error adding image:', error);
       // Optionally, add error handling messages here
@@ -431,7 +428,7 @@ const ChatInterface: React.FC = () => {
   const selectedConv = conversations.find(
     (conv) => conv.id === selectedConversationId
   );
-  const { title, setting, speaker } = selectedConv || {};
+  const { title } = selectedConv || {};
   const isInputDisabled = isFinalDraftSubmitted || loading;
 
   return (
@@ -439,13 +436,7 @@ const ChatInterface: React.FC = () => {
       sx={{ display: 'flex', flexDirection: 'column', height: '100%', mb: 6 }}
     >
       {/* Chat Description */}
-      {selectedConv && (
-        <ChatDescription
-          title={title || ''}
-          setting={setting || ''}
-          speaker={speaker || ''}
-        />
-      )}
+      {selectedConv && <ChatDescription title={title || ''} />}
       {/* Conversation Selector */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <LanguageSelector
@@ -472,7 +463,7 @@ const ChatInterface: React.FC = () => {
         {messages.map((message) => (
           <MessageComponent key={message.id} message={message} />
         ))}
-        
+
         {/* Action Buttons after Final Draft Submission */}
         {isFinalDraftSubmitted && (
           <Box
@@ -546,7 +537,7 @@ const ChatInterface: React.FC = () => {
           </Card>
         </Box>
       )}
-      
+
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
       {!isFinalDraftSubmitted && (
@@ -572,9 +563,7 @@ const ChatInterface: React.FC = () => {
                     onClick={handleSendMessage}
                     edge="end"
                     tabIndex={-1}
-                    disabled={
-                      isInputDisabled || loading 
-                    }
+                    disabled={isInputDisabled || loading}
                     aria-label="send message"
                     sx={{
                       margin: '0px',
@@ -609,12 +598,7 @@ const ChatInterface: React.FC = () => {
               },
             }}
           />
-          {/* Optionally, display a message when input is disabled */}
-          {isInputDisabled && (
-            <Typography variant="caption" color="textSecondary" mt={1}>
-              Please follow the prompts to continue the conversation.
-            </Typography>
-          )}
+
           {/* Display feedback loading indicator */}
           {isFinalDraftSubmitted && userFinalDraft && (
             <Box sx={{ mt: 2 }}>
