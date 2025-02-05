@@ -45,12 +45,13 @@ export const getFeedback = async (draftText:string):Promise<FeedbackResponse> =>
  * @param setting - The conversation setting.
  * @returns A promise that resolves to the initial system message.
  */
-export const initializeConversation = async (topic: string, setting: string) => {
+export const initializeConversation = async (topic: string, setting: string,language:string) => {
   try {
     const response = await axios.post(`${BASE_URL}/dynamicguidance`, {
       action: 'initialize',
       topic,
       setting,
+      language,
     });
     if (response.status === 200) {
       return response.data; // Assuming the API returns { id, role, content }
@@ -68,7 +69,7 @@ export const initializeConversation = async (topic: string, setting: string) => 
  * @param draftText - The user's draft text.
  * @returns A promise that resolves to a FeedbackResponse.
  */
-export const getDynamicFeedback = async (draftText: string,topic:string,setting:string,isFirstDraft:boolean): Promise<FeedbackResponse> => {
+export const getDynamicFeedback = async (draftText: string,topic:string,setting:string,isFirstDraft:boolean,language:string): Promise<FeedbackResponse> => {
   try {
     console.log('Sending draft to API for feedback:', draftText);
     const response = await axios.post(`${BASE_URL}/dynamicguidance`, {
@@ -77,6 +78,7 @@ export const getDynamicFeedback = async (draftText: string,topic:string,setting:
       topic,
       setting,
       isFirstDraft,
+      language,
     });
     if (response.status === 200) {
       return response.data as FeedbackResponse;

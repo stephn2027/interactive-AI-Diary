@@ -25,7 +25,46 @@ export const handler = async (event) => {
   }
 
   // Determine the type of action requested
-  const { action } = parsedEvent;
+  const { action, language } = parsedEvent;
+
+  if (
+    !language ||
+    typeof language !== 'string' ||
+    language.trim().length === 0
+  ) {
+    console.error('Language must be a non-empty string');
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ message: 'Language must be a non-empty string' }),
+      headers,
+    };
+  }
+  //define the language-specific settings
+  const languageSettings = {
+    ja: {
+      script: `Japanese (hiragana and katakana)`,
+      instructions: `Use simple language with focus on hiragana and katakana characters. Avoid complex kanji characters to help beginner learners.`,
+    },
+    ko: {
+      script: `Korean (Hangul)`,
+      instructions: `Use simple language with focus on Hangul characters. Avoid complex characters to help beginner learners.`,
+    },
+    en: {
+      script: `English`,
+      instructions: `Use clear and simple English suitable for beginners. Avoid complex vocabulary and grammar to help learners understand.`,
+    },
+  };
+
+  const selectedLanguage = languageSettings[language] || languageSettings['en'];
+
+  if (!selectedLanguage) {
+    console.error('Unsupported language selected:', language);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ message: 'Unsupported language selected.' }),
+      headers,
+    };
+  }
 
   if (action === 'initialize') {
     // **Handle Topic Selection and Initial Prompt Generation**
@@ -41,7 +80,12 @@ export const handler = async (event) => {
       };
     }
     const systemPrompt = `
-    You are an educational writing assistant dedicated to guiding beginners through writing exercises.`;
+    You are an educational writing assistant dedicated to guiding beginners through writing exercises. 
+
+     ${selectedLanguage.instructions} Ensure all instructions and feedback are in English but support the use of ${selectedLanguage.script} to aid learning.
+    `;
+
+   
     // Construct the prompt for OpenAI to generate the initial system message
     const userPrompt = `
 
@@ -52,7 +96,7 @@ export const handler = async (event) => {
     **Instructions:**
     - The draft should be at least 3 sentences long.
     - The draft should have clear, coherent sentences that effectively communicate basic ideas.
-
+    
     **Format:**
     \`\`\`json
     {
@@ -138,7 +182,7 @@ export const handler = async (event) => {
     }
   } else if (action === 'feedback') {
     // **Handle Real-Time Feedback Based on User Input**
-    const { draftText, topic, setting , isFirstDraft } = parsedEvent;
+    const { draftText, topic, setting, isFirstDraft } = parsedEvent;
 
     // Validate required parameters
     if (
@@ -153,11 +197,14 @@ export const handler = async (event) => {
       setting.trim().length === 0 ||
       typeof isFirstDraft !== 'boolean'
     ) {
-      console.error('Draft text,topic,setting must be a non-empty string and isFirstDraft must be a boolean');
+      console.error(
+        'Draft text,topic,setting must be a non-empty string and isFirstDraft must be a boolean'
+      );
       return {
         statusCode: 400,
         body: JSON.stringify({
-          message: 'Draft text must be a non-empty string and topic,setting must be a string and isFirstDraft must be a boolean',
+          message:
+            'Draft text must be a non-empty string and topic,setting must be a string and isFirstDraft must be a boolean',
         }),
         headers,
       };
@@ -173,6 +220,8 @@ export const handler = async (event) => {
     ];
     const systemPrompt = `
     You are an educational writing assistant that provides constructive, clear, and actionable feedback to help learners improve their written drafts.
+
+    ${selectedLanguage.instructions} Ensure all feedback is in English but can incorporate the use of ${selectedLanguage.script} where applicable.
     `;
     // Construct the prompt for OpenAI to generate feedback
     const userPrompt = `
@@ -186,6 +235,10 @@ export const handler = async (event) => {
     **Completion Criteria:**
     ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
     **Ensure Relevance:** Feedback should address both the topic and setting of the draft.
+    **Instructions for ${selectedLanguage.script}:**
+      - Encourage the correct use of ${selectedLanguage.script} characters.
+      - Offer suggestions on how to write ${selectedLanguage.script} characters better.
+      - Use very simple words and language suitable for beginners.
     **User Input Classification Scenarios:**
     - **On-Track Input:** Completely relevant and meets criteria.
     - **Partially On-Track Input:** Minimal content but relevant.
@@ -261,14 +314,14 @@ export const handler = async (event) => {
         ) {
           throw new Error('Missing required fields in feedback response.');
         }
-        if(isFirstDraft){
-           formattedResponse.allCriteriaMet = false;            
+        if (isFirstDraft) {
+          formattedResponse.allCriteriaMet = false;
         }
-        
+
         // if (!isFirstDraft && allCriteriaMet) {
         //     // Append the dynamic congratulatory message if not already included
         //     const dynamicMessage = "Would you like to add a bit more detail, or are you satisfied with the results and ready to showcase your work?";
-            
+
         //     // Check if the dynamic message is already included to prevent duplication
         //     if (!feedback.includes(dynamicMessage)) {
         //       formattedResponse.feedback += `\n\n${dynamicMessage}`;

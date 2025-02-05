@@ -1,16 +1,16 @@
 [
   {
     "id": "buyingProduct",
-    "title": "商品を購入する",
-    "setting": "最新の買い物経験について説明してください。何を購入しましたか？スタッフとのやり取りはどうでしたか？どのように選びましたか？",
-    "topic": "コンピュータを購入する",
-    "speaker": "ユーザー"
+    "title": "Buying a Product",
+    "setting": "Describe your latest shopping experience. What did you buy? How was your interaction with the staff? How did you make your choice?",
+    "topic": "Purchase a computer",
+    "speaker": "User"
   },
   {
     "id": "introducingYourself",
-    "title": "自己紹介",
-    "setting": "自己紹介を書いてください。出身はどこですか？趣味は何ですか？職業は何ですか？",
-    "topic": "自己紹介",
-    "speaker": "ユーザー"
+    "title": "Introducing Yourself",
+    "setting": "Write a brief introduction about yourself. Where are you from? What are your hobbies? What do you do for a living?",
+    "topic": "Self Introduction",
+    "speaker": "User"
   }
 ]

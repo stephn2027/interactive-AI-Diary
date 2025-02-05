@@ -108,7 +108,8 @@ const ChatInterface: React.FC = () => {
         setLoading(true);
         const systemMessageData = await initializeConversation(
           selectedConv.topic,
-          selectedConv.setting
+          selectedConv.setting,
+          selectedLanguage
         );
         const systemMessage: Message = {
           id: Date.now(),
@@ -130,7 +131,7 @@ const ChatInterface: React.FC = () => {
       }
     };
     fetchInitialMessage();
-  }, [selectedConversationId, conversations]);
+  }, [selectedConversationId, conversations,selectedLanguage]);
 
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
@@ -182,6 +183,7 @@ const ChatInterface: React.FC = () => {
         selectedConv!.setting,
         selectedConv!.topic,
         isFirstDraft,
+        selectedLanguage,
       );
       //append the feedback as system messages
       const feedbackMessage: Message = {
