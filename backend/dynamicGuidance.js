@@ -62,7 +62,7 @@ export const handler = async (event) => {
 
     }
     \`\`\`
-    
+
     **Sample Output:**
     \`\`\`json
     {
@@ -138,7 +138,7 @@ export const handler = async (event) => {
     }
   } else if (action === 'feedback') {
     // **Handle Real-Time Feedback Based on User Input**
-    const { draftText, topic, setting } = parsedEvent;
+    const { draftText, topic, setting , isFirstDraft } = parsedEvent;
 
     // Validate required parameters
     if (
@@ -150,13 +150,14 @@ export const handler = async (event) => {
       topic.trim().length === 0 ||
       !setting ||
       typeof setting !== 'string' ||
-      setting.trim().length === 0
+      setting.trim().length === 0 ||
+      typeof isFirstDraft !== 'boolean'
     ) {
-      console.error('Draft text,topic,setting must be a non-empty string');
+      console.error('Draft text,topic,setting must be a non-empty string and isFirstDraft must be a boolean');
       return {
         statusCode: 400,
         body: JSON.stringify({
-          message: 'Draft text must be a non-empty string',
+          message: 'Draft text must be a non-empty string and topic,setting must be a string and isFirstDraft must be a boolean',
         }),
         headers,
       };
@@ -204,8 +205,12 @@ export const handler = async (event) => {
     - **Empty Input:** Offer a starting point or example.
     3. **Use Simple Language:** Ensure feedback is easy to understand.
     4. **Include Examples:** Where applicable, provide examples to illustrate suggestions.
-    5. **Determine Completion:** If all criteria are met, include a statement indicating that all criteria have been satisfied.
-
+    5. **Determine Completion:**
+     ${
+       isFirstDraft
+         ? 'If all criteria are met, include a statement encouraging the user to revise their draft and add more details. Do not include a congratulatory message.'
+         : 'If all criteria are met, include a congratulatory statement and ask if the user would like to add more detail or are ready to showcase their work. Make sure to include words in a new line like Do you want to add more details to your draft or ready to showcase your work?.'
+     }
     **Response Format (JSON):**
     {
     "classification": "<classification_category>",
@@ -256,19 +261,19 @@ export const handler = async (event) => {
         ) {
           throw new Error('Missing required fields in feedback response.');
         }
-
-        if (allCriteriaMet) {
-          const congratulatoryMessage = `Great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.`;
-
-          if (
-            formattedResponse.feedback &&
-            formattedResponse.feedback.trim().length > 0
-          ) {
-            formattedResponse.feedback += `\n\n${congratulatoryMessage}`;
-          } else {
-            formattedResponse.feedback = congratulatoryMessage;
-          }
+        if(isFirstDraft){
+           formattedResponse.allCriteriaMet = false;            
         }
+        
+        // if (!isFirstDraft && allCriteriaMet) {
+        //     // Append the dynamic congratulatory message if not already included
+        //     const dynamicMessage = "Would you like to add a bit more detail, or are you satisfied with the results and ready to showcase your work?";
+            
+        //     // Check if the dynamic message is already included to prevent duplication
+        //     if (!feedback.includes(dynamicMessage)) {
+        //       formattedResponse.feedback += `\n\n${dynamicMessage}`;
+        //     }
+        //   }
         return {
           statusCode: 200,
           body: JSON.stringify(formattedResponse),

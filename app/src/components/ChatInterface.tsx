@@ -10,6 +10,7 @@ import {
   CircularProgress,
   Card,
   CardMedia,
+  Collapse,
 } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
@@ -40,6 +41,7 @@ const ChatInterface: React.FC = () => {
     conversations[0]?.id || ''
   );
   const [isFeedbackLoading, setFeedbackLoading] = useState<boolean>(false);
+  const [userMessageCount, setUserMessageCount] = useState<number>(0);
   const [userFinalDraft, setUserFinalDraft] = useState<string | null>(null);
   const [isFinalDraftSubmitted, setIsFinalDraftSubmitted] =
     useState<boolean>(false);
@@ -51,6 +53,8 @@ const ChatInterface: React.FC = () => {
   const [isJournalButtonClicked, setIsJournalButtonCliked] =
     useState<boolean>(false);
   const [postSubmissionLoading, setPostSubmissionLoading] =
+    useState<boolean>(false);
+  const [showPostSubmissionButtons, setShowPostSubmissionButtons] =
     useState<boolean>(false);
   const [imageURL, setImageURL] = useState<string | null>(null);
   const [allCriteriaMet, setAllCriteriaMet] = useState<boolean>(false);
@@ -88,6 +92,8 @@ const ChatInterface: React.FC = () => {
     setPostSubmissionLoading(false);
     setImageURL(null);
     setIsFinalDraftSubmitted(false);
+    setShowPostSubmissionButtons(false);
+    setUserMessageCount(0);
   };
   // Initialize conversation with dynamic system message
   useEffect(() => {
@@ -143,6 +149,8 @@ const ChatInterface: React.FC = () => {
   const handleSendMessage = async () => {
     if (currentInput.trim() === '') return;
     const userMessageContent = currentInput.trim();
+    setUserMessageCount(prev=>prev + 1);
+    const currentUserMessageCount = userMessageCount+1;
     // Append user's message
     const userMessage: Message = {
       id: Date.now(),
@@ -151,10 +159,11 @@ const ChatInterface: React.FC = () => {
     };
     setMessages((prev) => [...prev, userMessage]);
     // Set the initial draft if not already set
-    if (initialDraft === null) {
+    const isFirstDraft = currentUserMessageCount === 1;
+    if (isFirstDraft) {
       setInitialDraft(userMessageContent);
     }
-
+    
     setCurrentInput('');
     if (inputRef.current) {
       inputRef.current.focus();
@@ -171,7 +180,8 @@ const ChatInterface: React.FC = () => {
       const feedbackResponse: FeedbackResponse = await getDynamicFeedback(
         userMessageContent,
         selectedConv!.setting,
-        selectedConv!.topic
+        selectedConv!.topic,
+        isFirstDraft,
       );
       //append the feedback as system messages
       const feedbackMessage: Message = {
@@ -183,10 +193,9 @@ const ChatInterface: React.FC = () => {
 
       //check if all criteria are met
       console.log('all criteria met: ', feedbackResponse.allCriteriaMet);
-      if (feedbackResponse.allCriteriaMet) {
+      if (feedbackResponse.allCriteriaMet && !isFirstDraft) {
         setUserFinalDraft(userMessageContent);
         setAllCriteriaMet(true);
-        handleSubmitFinalDraft(userMessageContent);
       }
     } catch (error) {
       console.error('Error fetching feedback:', error);
@@ -302,37 +311,27 @@ const ChatInterface: React.FC = () => {
       return;
     }
     setIsFinalDraftSubmitted(true);
-    // const submissionMessage: Message = {
-    //   id: Date.now() + 3,
-    //   role: 'System',
-    //   content: "You’ve reached 3 sentences—great work! Your draft meets all the criteria. Your story is clear, detailed, and grammatically correct. Let’s move to the next stage and showcase your work.",
-
-    // }
-    // setMessages((prev) => [...prev, submissionMessage]);
+    setShowPostSubmissionButtons(true);
   };
-  //automatically submit the final draft when set
 
-  // const handleReviseFinalDraft = () => {
-  //   if (userMessageCount === 4) {
-  //     setIsFinalDraftSubmitted(false);
-  //     setUserFinalDraft(null);
-  //     setUserMessageCount(3);
-  //     setUserInputs((prev) => prev.slice(0, 3));
-  //     // setMessages((prev) => prev.filter((msg) => msg.role !== 'System')); // Remove end message
-  //     // setMessages(prev=>prev.slice(0,-1));
-  //     if (!hasReviseMessageShown) {
-  //       const reviseSystemMessage: Message = {
-  //         id: Date.now() + 5, // Ensure a unique ID
-  //         role: 'System',
-  //         content: 'Great! Take your time to revise your draft.',
-  //         hint: null,
-  //       };
-  //       setMessages((prev) => [...prev, reviseSystemMessage]);
-  //       setHasRevisedMessageShown(true);
-  //     }
-  //   }
-  // };
+  const handleReviseFinalDraft = () => {
+    setUserFinalDraft(null);
+    setAllCriteriaMet(false);
+    setIsFinalDraftSubmitted(false);
+    const reviseMessage: Message = {
+      id: Date.now() + 2,
+      role: 'System',
+      content:
+        "You've chosen to revise your draft.Please make the necessary changes.",
+    };
+    setMessages((prev) => [...prev, reviseMessage]);
+  };
 
+  const handleFinalSubmission = () => {
+    if (userFinalDraft) {
+      handleSubmitFinalDraft(userFinalDraft);
+    }
+  };
   const initiateDraftComparison = async (
     initial: string | null,
     final: string | null
@@ -425,6 +424,7 @@ const ChatInterface: React.FC = () => {
       onClick: handleSendLetter, // Define this handler
     },
   ];
+
   const selectedConv = conversations.find(
     (conv) => conv.id === selectedConversationId
   );
@@ -465,7 +465,12 @@ const ChatInterface: React.FC = () => {
         ))}
 
         {/* Action Buttons after Final Draft Submission */}
-        {isFinalDraftSubmitted && (
+
+        <Collapse
+          in={showPostSubmissionButtons}
+          timeout={{ enter: 500, exit: 300 }}
+          sx={{ transition: 'height 500ms ease-in-out' }}
+        >
           <Box
             sx={{
               display: 'flex',
@@ -489,7 +494,41 @@ const ChatInterface: React.FC = () => {
               </Button>
             ))}
           </Box>
-        )}
+        </Collapse>
+
+        <Collapse
+          in={allCriteriaMet && !isFinalDraftSubmitted}
+          timeout={{ enter: 500, exit: 300 }}
+          sx={{ transition: 'height 500ms ease-in-out' }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              mt: 2,
+              mb: 2,
+              ml: 6,
+              justifyContent: 'flex-start',
+            }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleFinalSubmission}
+              startIcon={<SendIcon />}
+            >
+              Submit Final Draft
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleReviseFinalDraft}
+              startIcon={<BookIcon />}
+            >
+              Revise Draft
+            </Button>
+          </Box>
+        </Collapse>
         <div ref={endOfMessagesRef} />
         {loading && !isJournalButtonClicked && (
           <MessageComponent
