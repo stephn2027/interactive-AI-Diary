@@ -8,67 +8,77 @@ import {
   View,
 } from '@react-pdf/renderer';
 import NotoSans from '../assets/fonts/NotoSans-VariableFont_wdth,wght.ttf';
-
+import NotosansJP from '../assets/fonts/NotoSansJP-VariableFont_wght.ttf';
+import NotosansKR from '../assets/fonts/NotoSansKR-VariableFont_wght.ttf';
+import NotoSansZH from '../assets/fonts/NotoSansSC-VariableFont_wght.ttf';
+import { LanguageKey } from '../util/types';
 // Define the props interface
 interface JournalReportProps {
   journalData: string;
   language?: LanguageKey;
 }
 
-// Define supported languages
-type LanguageKey = 'en' | 'it' | 'fr' | 'ja' | 'ko' | 'zh';
-
 // Register NotoSans font
 Font.register({
   family: 'NotoSans',
   src: NotoSans,
 });
+Font.register({
+  family: 'NotoSansJP',
+  src: NotosansJP,
+});
 
-// Optionally, register other NotoSans CJK fonts if needed
-// Font.register({
-//   family: 'NotoSansCJKjp',
-//   src: '/path/to/NotoSansCJKjp-Regular.otf',
-// });
-// Similarly register NotoSansCJKkr and NotoSansCJKsc for Korean and Chinese
+Font.register({
+  family: 'NotoSansKR',
+  src: NotosansKR,
+});
+Font.register({
+  family: 'NotoSansZH',
+  src: NotoSansZH,
+});
 
 // Define styles
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f2f2f2',
     fontFamily: 'NotoSans',
+
   },
   section: {
     marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#ffffff', 
+    borderRadius: 8, // Rounded corners for a modern look
   },
   heading: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: '#333333',
-    fontFamily: 'NotoSans',
+    fontSize: 20, // Increased font size for headings
+    marginBottom: 12, // More spacing below headings
+    color: '#333333', // Darker color for better contrast
+    fontWeight: 'semibold', // Semi-bold for emphasis
+    
   },
   text: {
     fontSize: 12,
     color: '#000000',
     marginBottom: 5,
-    fontFamily: 'NotoSans',
+    
   },
   highlightedText: {
     fontSize: 12,
-    color: '#00796B',
+    color: '#238dbe',
     fontWeight: 'bold',
-    fontFamily: 'NotoSans',
+   
   },
   listItem: {
     fontSize: 12,
     color: '#000000',
-    fontFamily: 'NotoSans',
     marginBottom: 10,
     flexDirection: 'row',
   },
   listItemKey: {
     fontWeight: 'bold',
-    color: '#00796B',
+    color: '#238dbe',
     width:'40%',
     flexWrap:'wrap',
   },
@@ -82,11 +92,11 @@ const styles = StyleSheet.create({
 const getFontFamily = (language: LanguageKey): string => {
   switch (language) {
     case 'ja':
-      return 'NotoSansCJKjp';
+      return 'NotoSansJP';
     case 'ko':
-      return 'NotoSansCJKkr';
+      return 'NotoSansKR';
     case 'zh':
-      return 'NotoSansCJKsc';
+      return 'NotoSansZH';
     default:
       return 'NotoSans';
   }
@@ -115,9 +125,9 @@ const renderTextWithHighlights = (content: string) => {
 // Main JournalReport component
 const JournalReport: React.FC<JournalReportProps> = ({
   journalData,
-  language = 'en',
+  language,
 }) => {
-  const fontFamily = getFontFamily(language);
+  
 
   // Function to extract sections using regex
   const extractSections = (data: string): Record<string, string> => {
@@ -169,7 +179,7 @@ const JournalReport: React.FC<JournalReportProps> = ({
     : [];
 
   const currentDate = new Date().toLocaleDateString();
-
+  const fontFamily = getFontFamily(language ?? 'en');
   return (
     <Document>
       <Page size="A4" style={{ ...styles.page, fontFamily }}>

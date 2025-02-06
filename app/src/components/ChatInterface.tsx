@@ -18,7 +18,7 @@ import BookIcon from '@mui/icons-material/BookOnlineSharp';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
-import { Message, Conversation, FeedbackResponse } from '../util/types';
+import { Message, Conversation, FeedbackResponse,LanguageKey } from '../util/types';
 import {
   compareDraftAPI,
   getDynamicFeedback,
@@ -29,6 +29,8 @@ import {
 import JournalDataDisplay from './JournalDataDisplay';
 import LanguageSelector from './LanguageSelector';
 import ConversationSelector from './ConversationSelector';
+
+
 const ChatInterface: React.FC = () => {
   // State declarations
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
@@ -131,7 +133,7 @@ const ChatInterface: React.FC = () => {
       }
     };
     fetchInitialMessage();
-  }, [selectedConversationId, conversations,selectedLanguage]);
+  }, [selectedConversationId, conversations]);
 
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
@@ -370,12 +372,12 @@ const ChatInterface: React.FC = () => {
       }
       // call the api to generate image
       console.log('Handle add image has been clicked');
-      // const data = await generateImageAPI(userFinalDraft);
-      // if (data && data.success && data.imageUrl) {
-      //   setImageURL(data.imageUrl);
-      // } else {
-      //   console.error('Unable to retrieve image URL from serverless function');
-      // }
+      const data = await generateImageAPI(userFinalDraft);
+      if (data && data.success && data.imageUrl) {
+        setImageURL(data.imageUrl);
+      } else {
+        console.error('Unable to retrieve image URL from serverless function');
+      }
     } catch (error) {
       console.error('Error adding image:', error);
       // Optionally, add error handling messages here
@@ -554,7 +556,7 @@ const ChatInterface: React.FC = () => {
       {/* Journal Results Displayed After Hints */}
       {isJournalButtonClicked && journalData && (
         // <JournalView journalData={journalData}/>
-        <JournalDataDisplay journalData={journalData} />
+        <JournalDataDisplay journalData={journalData} language={selectedLanguage as LanguageKey} />
       )}
       {/* Display Image */}
       {imageURL && (

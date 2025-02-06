@@ -15,7 +15,10 @@ import DownloadIcon from '@mui/icons-material/Download';
 import { pdf } from '@react-pdf/renderer';
 import JournalReport from './JournalReport'; // Ensure this component is correctly implemented
 import HighlightableTextWithPopover from './MobilePopover';
+import { LanguageKey } from '../util/types';
 
+// Define language key type
+ // Add more language codes as needed
 
 // Define the props for the component
 interface JournalDataDisplayProps {
@@ -23,7 +26,6 @@ interface JournalDataDisplayProps {
   language?: LanguageKey;
 }
 
-type LanguageKey = 'en' | 'it' | 'fr' | 'ja' | 'ko' | 'zh';
 
 // Define constants for section headers
 const SECTION_HEADERS = {
