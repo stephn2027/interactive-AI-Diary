@@ -2,9 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Paper,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
   Box,
   Button,
   Tooltip,
@@ -16,9 +13,12 @@ import { pdf } from '@react-pdf/renderer';
 import JournalReport from './JournalReport'; // Ensure this component is correctly implemented
 import HighlightableTextWithPopover from './MobilePopover';
 import { LanguageKey } from '../util/types';
-
+import {
+  ParsedJournalDataProps,
+  parseJournalData,
+} from '../util/parseJournalData';
 // Define language key type
- // Add more language codes as needed
+// Add more language codes as needed
 
 // Define the props for the component
 interface JournalDataDisplayProps {
@@ -27,17 +27,6 @@ interface JournalDataDisplayProps {
 }
 
 
-// Define constants for section headers
-const SECTION_HEADERS = {
-  FIRST_DRAFT: 'First Draft:',
-  REVISED_DRAFT: 'Revised Draft with highlighted improvements:',
-  EXPLANATIONS: 'Explanations for Improvements:',
-} as const;
-
-interface ParsedSection {
-  header: string | null;
-  content: string;
-}
 
 const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   journalData,
@@ -46,15 +35,14 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  // const [isHovered, setIsHovered] = useState(false);
+  const parsedData: ParsedJournalDataProps = useMemo(
+    () => parseJournalData(journalData),
+    [journalData]
+  );
+  const { firstDraft, revisedDraft, explanations } = parsedData;
 
-  // const handleTouchStart = (event: TouchEvent<HTMLSpanElement>) => {
-  //   setIsHovered(true);
-  //   event.preventDefault();
-  // };
-  // const handleTouchEnd = (event: TouchEvent<HTMLSpanElement>) => {
-  //   setIsHovered(false);
-  // };
+  const explanationsMap = useMemo(() => explanations, [explanations]);
+
   // PDF Generation Function
   const handleDownload = async () => {
     setLoading(true);
@@ -86,187 +74,185 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   };
 
   // Split the journalData into sections based on double newlines and trim each section
-  const sections = journalData.split('\n\n').map((section) => section.trim());
+  // const sections = journalData.split('\n\n').map((section) => section.trim());
 
-  // Function to parse sections into header-content pairs
-  const parseSections = (sections: string[]): ParsedSection[] => {
-    const parsedSections: ParsedSection[] = [];
-    let i = 0;
+  // // Function to parse sections into header-content pairs
+  // const parseSections = (sections: string[]): ParsedSection[] => {
+  //   const parsedSections: ParsedSection[] = [];
+  //   let i = 0;
 
-    while (i < sections.length) {
-      const section = sections[i];
-      let matchedHeader: keyof typeof SECTION_HEADERS | null = null;
+  //   while (i < sections.length) {
+  //     const section = sections[i];
+  //     let matchedHeader: keyof typeof SECTION_HEADERS | null = null;
 
-      // Iterate over the keys of SECTION_HEADERS in a type-safe manner
-      const headerKeys = Object.keys(SECTION_HEADERS) as Array<
-        keyof typeof SECTION_HEADERS
-      >;
+  //     // Iterate over the keys of SECTION_HEADERS in a type-safe manner
+  //     const headerKeys = Object.keys(SECTION_HEADERS) as Array<
+  //       keyof typeof SECTION_HEADERS
+  //     >;
 
-      // Determine if the current section starts with any of the defined headers
-      for (const headerKey of headerKeys) {
-        if (section.startsWith(SECTION_HEADERS[headerKey])) {
-          matchedHeader = headerKey;
-          break;
-        }
-      }
+  //     // Determine if the current section starts with any of the defined headers
+  //     for (const headerKey of headerKeys) {
+  //       if (section.startsWith(SECTION_HEADERS[headerKey])) {
+  //         matchedHeader = headerKey;
+  //         break;
+  //       }
+  //     }
 
-      if (matchedHeader) {
-        // Extract header name without colon
-        const headerName =
-          matchedHeader === 'REVISED_DRAFT'
-            ? 'Revised Draft'
-            : matchedHeader === 'FIRST_DRAFT'
-            ? 'First Draft'
-            : 'Explanations for Improvements';
+  //     if (matchedHeader) {
+  //       // Extract header name without colon
+  //       const headerName =
+  //         matchedHeader === 'REVISED_DRAFT'
+  //           ? 'Revised Draft'
+  //           : matchedHeader === 'FIRST_DRAFT'
+  //           ? 'First Draft'
+  //           : 'Explanations for Improvements';
 
-        // Extract content from the current section
-        let content = section
-          .replace(SECTION_HEADERS[matchedHeader], '')
-          .trim();
+  //       // Extract content from the current section
+  //       let content = section
+  //         .replace(SECTION_HEADERS[matchedHeader], '')
+  //         .trim();
 
-        // If content is empty, assume it's in the next section
-        if (!content) {
-          if (i + 1 < sections.length) {
-            content = sections[i + 1];
-            console.log(
-              `Extracted content for "${headerName}" from section ${
-                i + 1
-              }: ${content}`
-            );
-            i++; // Skip next section as it's been consumed
-          } else {
-            console.warn(`No content found for header "${headerName}".`);
-            content = '';
-          }
-        }
+  //       // If content is empty, assume it's in the next section
+  //       if (!content) {
+  //         if (i + 1 < sections.length) {
+  //           content = sections[i + 1];
+  //           console.log(
+  //             `Extracted content for "${headerName}" from section ${
+  //               i + 1
+  //             }: ${content}`
+  //           );
+  //           i++; // Skip next section as it's been consumed
+  //         } else {
+  //           console.warn(`No content found for header "${headerName}".`);
+  //           content = '';
+  //         }
+  //       }
 
-        parsedSections.push({ header: headerName, content });
-      } else {
-        // If the section doesn't start with any known header, treat it as generic content
-        parsedSections.push({ header: null, content: section });
-      }
+  //       parsedSections.push({ header: headerName, content });
+  //     } else {
+  //       // If the section doesn't start with any known header, treat it as generic content
+  //       parsedSections.push({ header: null, content: section });
+  //     }
 
-      i++;
-    }
+  //     i++;
+  //   }
 
-    return parsedSections;
-  };
+  //   return parsedSections;
+  // };
 
-  const parsedSections = parseSections(sections);
+  // const parsedSections = parseSections(sections);
 
-  const explanationsMap = useMemo(() => {
-    const explanationsSection = parsedSections.find(
-      (section) => section.header === 'Explanations for Improvements'
-    );
-    if (!explanationsSection) {
-      return {};
-    }
-    const explanations: { [key: string]: string } = {};
-    explanationsSection.content.split('\n').forEach((line) => {
-      const match = line.match(/^\d+\.\s*\*(.+?)\*:\s*(.+)$/);
-      if (match) {
-        const key = match[1].trim();
-        const value = match[2].trim();
-        explanations[key] = value;
-      }
-    });
-    return explanations;
-  }, [parsedSections]);
-  
+  // const explanationsMap = useMemo(() => {
+  //   const explanationsSection = parsedSections.find(
+  //     (section) => section.header === 'Explanations for Improvements'
+  //   );
+  //   if (!explanationsSection) {
+  //     return {};
+  //   }
+  //   const explanations: { [key: string]: string } = {};
+  //   explanationsSection.content.split('\n').forEach((line) => {
+  //     const match = line.match(/^\d+\.\s*\*(.+?)\*:\s*(.+)$/);
+  //     if (match) {
+  //       const key = match[1].trim();
+  //       const value = match[2].trim();
+  //       explanations[key] = value;
+  //     }
+  //   });
+  //   return explanations;
+  // }, [parsedSections]);
+
   // Helper function to render text with highlighted parts
   const renderHighlightedText = (text: string) => {
     if (!text) return null;
-
     // Use a regular expression to split the text by asterisks, retaining the asterisks
     const regex = /(\*[^*]+\*)/g;
     const parts = text.split(regex);
-
     // Render each part, highlighting the ones surrounded by asterisks
-
     return parts.map((part, index) => {
       if (part.startsWith('*') && part.endsWith('*')) {
         const content = part.slice(1, -1).trim(); // Remove asterisks and trim spaces
-        if(isMobile){
+        const explanation =
+          explanationsMap[content] || 'No explanation available';
+        if (isMobile) {
           return (
             <HighlightableTextWithPopover
               key={index}
               text={content}
-              detailText={explanationsMap[content]||'No explanation available'}
+              detailText={explanation}
             />
           );
-        }else{
-        return (
-          <Tooltip
-            key={index}
-            title={explanationsMap[content] || 'No explanation available'}
-            arrow
-            placement="top"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'flip',
-                  options: {
-                    fallbackPlacements: ['top', 'bottom', 'left', 'right'],
-                  },
-                },
-                {
-                  name: 'preventOverflow',
-                  options: {
-                    boundary: 'none', // Ensure the tooltip stays within the viewport
-                  },
-                },
-              ],
-            }}
-
-            slotProps={{
-              tooltip: {
-                sx: {
-                  fontSize: '.9rem', // Increase font size
-                  padding: '1rem', 
-                 maxWidth: '25rem', // Increase padding and width
-                },
-              },
-              arrow: {
-                sx: {
-                  fontSize: '1rem',   // Increase arrow size
-                },
-              },
-            }}
-          >
-            <Typography
-              component="span"
+        } else {
+          return (
+            <Tooltip
               key={index}
-              // onTouchStart={handleTouchStart}
-              // onTouchEnd={handleTouchEnd}
-              sx={{
-                color: 'primary.main',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                display: 'inline-block',
-                transition: 'transform 0.3s ease',
-                borderRadius: 2,
-                padding: '0.1rem 0.3rem',
-                '&:hover': {
-                  textDecoration: 'underline',
-                  transform: 'scale(1.05)',
-                  '@media (hover: none)': {
-                    '&:active': {
-                      textDecoration: 'underline',
-                      transform: 'scale(1.05)',
+              title={explanationsMap[content] || 'No explanation available'}
+              arrow
+              placement="top"
+              PopperProps={{
+                modifiers: [
+                  {
+                    name: 'flip',
+                    options: {
+                      fallbackPlacements: ['top', 'bottom', 'left', 'right'],
                     },
                   },
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      boundary: 'none', // Ensure the tooltip stays within the viewport
+                    },
+                  },
+                ],
+              }}
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    fontSize: '.9rem', 
+                    padding: '1rem',
+                    maxWidth: '25rem', 
+                  },
                 },
-                // ...(isHovered && {
-                //   textDecoration: 'underline',
-                //   transform: 'scale(1.05)',
-                // }),
+                arrow: {
+                  sx: {
+                    fontSize: '1rem', 
+                  },
+                },
               }}
             >
-              {content}
-            </Typography>
-          </Tooltip>
-        );
-      }
+              <Typography
+                component="span"
+                key={index}
+                // onTouchStart={handleTouchStart}
+                // onTouchEnd={handleTouchEnd}
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  transition: 'transform 0.3s ease',
+                  borderRadius: 2,
+                  padding: '0.1rem 0.3rem',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                    transform: 'scale(1.05)',
+                    '@media (hover: none)': {
+                      '&:active': {
+                        textDecoration: 'underline',
+                        transform: 'scale(1.05)',
+                      },
+                    },
+                  },
+                  // ...(isHovered && {
+                  //   textDecoration: 'underline',
+                  //   transform: 'scale(1.05)',
+                  // }),
+                }}
+              >
+                {content}
+              </Typography>
+            </Tooltip>
+          );
+        }
       } else {
         return <span key={index}>{part}</span>;
       }
@@ -274,70 +260,70 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
   };
 
   // Helper function to render explanations in key-value format
-  const renderExplanations = (explanationsText: string) => {
-    if (!explanationsText) return null;
+  // const renderExplanations = (explanationsText: string) => {
+  //   if (!explanationsText) return null;
 
-    const explanations = explanationsText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line !== '');
+  //   const explanations = explanationsText
+  //     .split('\n')
+  //     .map((line) => line.trim())
+  //     .filter((line) => line !== '');
 
-    return (
-      <List
-        sx={{
-          listStyleType: 'decimal',
-          pl: 4,
-        }}
-      >
-        {explanations.map((explanation, idx) => {
-          // Match patterns like "1. *text*: explanation"
-          const match = explanation.match(/^\d+\.\s*\*(.+?)\*:\s*(.+)$/);
-          if (match) {
-            const key = match[1].trim();
-            const value = match[2].trim();
-            return (
-              <ListItem
-                key={idx}
-                sx={{ display: 'list-item', pl: 0, listStyle: 'none' }}
-                disableGutters
-                component="li"
-              >
-                <ListItemText
-                  primary={
-                    <>
-                      <Typography
-                        component="span"
-                        sx={{ fontWeight: 'bold', mr: 0.5 }}
-                      >
-                        {key}:
-                      </Typography>
-                      {value}
-                    </>
-                  }
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItem>
-            );
-          } else {
-            // Fallback for unexpected formats
-            return (
-              <ListItem
-                key={idx}
-                sx={{ display: 'list-item', pl: 0, listStyle: 'none' }}
-                disableGutters
-                component="li"
-              >
-                <ListItemText
-                  primary={explanation}
-                  primaryTypographyProps={{ variant: 'body2' }}
-                />
-              </ListItem>
-            );
-          }
-        })}
-      </List>
-    );
-  };
+  //   return (
+  //     <List
+  //       sx={{
+  //         listStyleType: 'decimal',
+  //         pl: 4,
+  //       }}
+  //     >
+  //       {explanations.map((explanation, idx) => {
+  //         // Match patterns like "1. *text*: explanation"
+  //         const match = explanation.match(/^\d+\.\s*\*(.+?)\*:\s*(.+)$/);
+  //         if (match) {
+  //           const key = match[1].trim();
+  //           const value = match[2].trim();
+  //           return (
+  //             <ListItem
+  //               key={idx}
+  //               sx={{ display: 'list-item', pl: 0, listStyle: 'none' }}
+  //               disableGutters
+  //               component="li"
+  //             >
+  //               <ListItemText
+  //                 primary={
+  //                   <>
+  //                     <Typography
+  //                       component="span"
+  //                       sx={{ fontWeight: 'bold', mr: 0.5 }}
+  //                     >
+  //                       {key}:
+  //                     </Typography>
+  //                     {value}
+  //                   </>
+  //                 }
+  //                 primaryTypographyProps={{ variant: 'body2' }}
+  //               />
+  //             </ListItem>
+  //           );
+  //         } else {
+  //           // Fallback for unexpected formats
+  //           return (
+  //             <ListItem
+  //               key={idx}
+  //               sx={{ display: 'list-item', pl: 0, listStyle: 'none' }}
+  //               disableGutters
+  //               component="li"
+  //             >
+  //               <ListItemText
+  //                 primary={explanation}
+  //                 primaryTypographyProps={{ variant: 'body2' }}
+  //               />
+  //             </ListItem>
+  //           );
+  //         }
+  //       })}
+  //     </List>
+  //   );
+  // };
 
   return (
     <Paper
@@ -350,68 +336,39 @@ const JournalDataDisplay: React.FC<JournalDataDisplayProps> = ({
         margin: '0 auto',
       }}
     >
-      {parsedSections.map((section, index) => {
-        if (section.header === 'First Draft') {
-          const content = section.content.replace(/^"|"$/g, ''); // Remove surrounding quotes
-          console.log(`Rendering First Draft: "${content}"`);
-          return (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                First Draft
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  whiteSpace: 'pre-wrap',
-                  fontStyle: 'italic',
-                  paddingInline: 6,
-                }}
-              >
-                {content}
-              </Typography>
-            </Box>
-          );
-        } else if (section.header === 'Revised Draft') {
-          const content = section.content.replace(/^"|"$/g, ''); // Remove surrounding quotes
-          console.log(`Rendering Revised Draft: "${content}"`);
-          return (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Revised Draft
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ whiteSpace: 'pre-wrap', paddingInline: 6 }}
-              >
-                {renderHighlightedText(content)}
-                {/* {content} */}
-              </Typography>
-            </Box>
-          );
-        } else if (section.header === 'Explanations for Improvements') {
-          const explanationsText = section.content;
-          console.log(
-            `Rendering Explanations for Improvements: "${explanationsText}"`
-          );
-          // return (
-          //   <Box key={index} sx={{ mb: 3 }}>
-          //     <Typography variant="h6" gutterBottom>
-          //       Explanations for Improvements
-          //     </Typography>
-          //     {renderExplanations(explanationsText)}
-          //   </Box>
-          // );
-        } else {
-          // Handle any other sections if present
-          return (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                {section.content}
-              </Typography>
-            </Box>
-          );
-        }
-      })}
+      {/* First Draft */}
+      {firstDraft && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            First Draft
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              whiteSpace: 'pre-wrap',
+              fontStyle: 'italic',
+              paddingInline: 6,
+            }}
+          >
+            {firstDraft.replace(/^"|"$/g, '')}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Revised Draft */}
+      {revisedDraft && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Revised Draft
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ whiteSpace: 'pre-wrap', paddingInline: 6 }}
+          >
+            {renderHighlightedText(revisedDraft.replace(/^"|"$/g, ''))}
+          </Typography>
+        </Box>
+      )}
       <Button
         variant="contained"
         color={loading ? 'secondary' : 'primary'}

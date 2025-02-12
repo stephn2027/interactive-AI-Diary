@@ -2,7 +2,12 @@ import axios from 'axios';
 import { FeedbackResponse } from './types';
 import english from '../assets/conversations/english.json';
 import japanese from '../assets/conversations/japanese.json';
+import italian from '../assets/conversations/italian.json';
+import chinese from '../assets/conversations/chinese.json';
+import spanish from '../assets/conversations/spanish.json';
+import french from '../assets/conversations/french.json';
 import { Conversation } from './types';
+import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const dev = true;
 const BASE_URL = dev
@@ -11,11 +16,13 @@ const BASE_URL = dev
 
 // const SAVE_AUDIO_URL = 'https://kkunnx02n7.execute-api.ap-northeast-1.amazonaws.com/dev';
 
-export const getFeedback = async (draftText:string):Promise<FeedbackResponse> => {
+export const getFeedback = async (
+  draftText: string
+): Promise<FeedbackResponse> => {
   try {
     console.log('Sending draft to API:', draftText);
-    const response = await axios.post(`${BASE_URL}/feedback`, {draftText} );
-    const feedbackFromApi:FeedbackResponse = response.data;
+    const response = await axios.post(`${BASE_URL}/feedback`, { draftText });
+    const feedbackFromApi: FeedbackResponse = response.data;
     console.log('Response data from API:', feedbackFromApi);
 
     if (response.status === 200) {
@@ -45,7 +52,11 @@ export const getFeedback = async (draftText:string):Promise<FeedbackResponse> =>
  * @param setting - The conversation setting.
  * @returns A promise that resolves to the initial system message.
  */
-export const initializeConversation = async (topic: string, setting: string,language:string) => {
+export const initializeConversation = async (
+  topic: string,
+  setting: string,
+  language: string
+) => {
   try {
     const response = await axios.post(`${BASE_URL}/dynamicguidance`, {
       action: 'initialize',
@@ -69,7 +80,13 @@ export const initializeConversation = async (topic: string, setting: string,lang
  * @param draftText - The user's draft text.
  * @returns A promise that resolves to a FeedbackResponse.
  */
-export const getDynamicFeedback = async (draftText: string,topic:string,setting:string,isFirstDraft:boolean,language:string): Promise<FeedbackResponse> => {
+export const getDynamicFeedback = async (
+  draftText: string,
+  topic: string,
+  setting: string,
+  isFirstDraft: boolean,
+  language: string
+): Promise<FeedbackResponse> => {
   try {
     console.log('Sending draft to API for feedback:', draftText);
     const response = await axios.post(`${BASE_URL}/dynamicguidance`, {
@@ -99,13 +116,12 @@ export const getDynamicFeedback = async (draftText: string,topic:string,setting:
   }
 };
 
-
 export const generateAudio = async (
   text: string,
   language: string,
   id: string,
   uid: string,
-  index: number,
+  index: number
 ) => {
   try {
     // Prepare the request payload
@@ -136,41 +152,59 @@ export const generateAudio = async (
   }
 };
 
-export const compareDraftAPI = async (initial:string|null,final:string|null) =>{
+export const compareDraftAPI = async (
+  initial: string | null,
+  final: string | null
+) => {
   try {
-    console.log("Sending drafts to generate journal");
-    const response = await axios.post(`${BASE_URL}/compare`,{initialDraft:initial,finalDraft:final});
+    console.log('Sending drafts to generate journal');
+    const response = await axios.post(`${BASE_URL}/compare`, {
+      initialDraft: initial,
+      finalDraft: final,
+    });
     return response.data;
   } catch (error) {
-    console.log("Error calling compareDraft API ", error);
+    console.log('Error calling compareDraft API ', error);
     throw error;
   }
-}
+};
 
-export const generateImageAPI = async (finalDraft:string) =>{
+export const generateImageAPI = async (finalDraft: string) => {
   try {
-    console.log("Sending text to generate image");
-    const response = await axios.post(`${BASE_URL}/generateimage`,{finalDraft:finalDraft});
+    console.log('Sending text to generate image');
+    const response = await axios.post(`${BASE_URL}/generateimage`, {
+      finalDraft: finalDraft,
+    });
     return response.data;
   } catch (error) {
-    console.log("Error calling generateImage API ", error);
+    console.log('Error calling generateImage API ', error);
     throw error;
   }
-}
+};
 
-export const getConversations = async (language: string): Promise<Conversation[]> => {
+export const getConversations = async (
+  language: string
+): Promise<Conversation[]> => {
   try {
     let conversationsData: Conversation[] = [];
     if (language === 'en') {
       conversationsData = english;
     } else if (language === 'ja') {
       conversationsData = japanese;
+    } else if (language === 'zh') {
+      conversationsData = chinese;
+    } else if (language === 'es') {
+      conversationsData = spanish;
+    } else if (language === 'fr') {
+      conversationsData = french;
+    } else if (language === 'it') {
+      conversationsData = italian;
     } else {
       throw new Error('Unsupported language selected');
     }
 
     // Extract only the necessary fields
-    const conversations: Conversation[] = conversationsData.map(conv => ({
+    const conversations: Conversation[] = conversationsData.map((conv) => ({
       id: conv.id,
       title: conv.title,
       setting: conv.setting,

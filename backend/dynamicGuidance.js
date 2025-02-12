@@ -53,6 +53,22 @@ export const handler = async (event) => {
       script: `English`,
       instructions: `Use clear and simple English suitable for beginners. Avoid complex vocabulary and grammar to help learners understand.`,
     },
+    it: {
+      script: `Italian`,
+      instructions: `Use clear and simple Italian suitable for beginners. Avoid complex vocabulary and grammar to help learners understand.`,
+    },
+    es: {
+      script: `Spanish`,
+      instructions: `Use clear and simple Spanish suitable for beginners. Avoid complex vocabulary and grammar to help learners understand.`,
+    },
+    fr: {
+      script: `French`,
+      instructions: `Use clear and simple French suitable for beginners. Avoid complex vocabulary and grammar to help learners understand.`,
+    },
+    zh: {
+      script: `Chinese`,
+      instructions: `Use clear and simple Chinese suitable for beginners. Avoid complex characters to help learners understand.`,
+    },
   };
 
   const selectedLanguage = languageSettings[language] || languageSettings['en'];
@@ -79,13 +95,31 @@ export const handler = async (event) => {
         headers,
       };
     }
+
+    const getSampleOutputText = (lang) => {
+      if (lang === 'ja') {
+        return `Your task is to write a short draft describing your latest experience shopping for a computer (コンピューター). Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience. You are encouraged to use simple Japanese (にほんご) words in hiragana or katakana.`;
+      } else if (lang === 'it') {
+        return `Your task is to write a short draft describing your latest experience shopping for a computer. Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience. You are encouraged to use simple Italian (italiano) words that are easy to understand.`;
+      } else if (lang === 'zh') {
+        return `Your task is to write a short draft describing your latest experience shopping for a computer (电脑). Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience. You are encouraged to use simple Chinese (中文) words focusing on basic characters.`;
+      } else if (lang === 'ko') {
+        return `Your task is to write a short draft describing your latest experience shopping for a computer (컴퓨터). Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience. You are encouraged to use simple Korean (한국어) words written in Hangul.`;
+      } else if (lang === 'es') {
+        return `Your task is to write a short draft describing your latest experience shopping for a computer. Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience. You are encouraged to use simple Spanish (español) words that are easy to understand.`;
+      } else {
+        // Default (English and other languages) sample output text
+        return `Your task is to write a short draft describing your latest experience shopping for a computer. Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience.`;
+      }
+    };
+
     const systemPrompt = `
     You are an educational writing assistant dedicated to guiding beginners through writing exercises. 
 
      ${selectedLanguage.instructions} Ensure all instructions and feedback are in English but support the use of ${selectedLanguage.script} to aid learning.
     `;
+    const sampleOutputText = getSampleOutputText(language);
 
-   
     // Construct the prompt for OpenAI to generate the initial system message
     const userPrompt = `
 
@@ -112,7 +146,7 @@ export const handler = async (event) => {
     {
     "id": "${uuidv4()}",
     "role": "System",
-    "content": "Your task is to write a short draft describing your latest experience shopping for a computer. Include details about what you purchased, how the staff interacted with you, and how you decided on the computer you chose. Ensure your draft is at least three sentences long, using clear and coherent language to effectively share your experience.",
+    "content": "${sampleOutputText}",
     }
     \`\`\`
 
@@ -237,7 +271,9 @@ export const handler = async (event) => {
     **Ensure Relevance:** Feedback should address both the topic and setting of the draft.
     **Instructions for ${selectedLanguage.script}:**
       - Encourage the correct use of ${selectedLanguage.script} characters.
-      - Offer suggestions on how to write ${selectedLanguage.script} characters better.
+      - Offer suggestions on how to write ${
+        selectedLanguage.script
+      } characters better.
       - Use very simple words and language suitable for beginners.
     **User Input Classification Scenarios:**
     - **On-Track Input:** Completely relevant and meets criteria.

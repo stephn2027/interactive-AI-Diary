@@ -18,6 +18,10 @@ export default function LanguageSelector({selectedLanguage,handleLanguageChange}
           >
             <MenuItem value="en">English</MenuItem>
             <MenuItem value="ja">Japanese</MenuItem>
+            <MenuItem value="it">Italian</MenuItem>
+            <MenuItem value="fr">French</MenuItem>
+            <MenuItem value="es">Spanish</MenuItem>
+            <MenuItem value="zh">Chinese</MenuItem>
           </Select>
         </FormControl>
   )

@@ -1,0 +1,51 @@
+[
+    {
+      "id": "buyingProduct",
+      "title": "Buying a Product",
+      "setting": "Describe your latest shopping experience. What did you buy? How was your interaction with the staff? How did you make your choice?",
+      "topic": "Purchase a computer",
+      "speaker": "User"
+    },
+    {
+      "id": "introducingYourself",
+      "title": "Introducing Yourself",
+      "setting": "Write a brief introduction about yourself. Where are you from? What are your hobbies? What do you do for a living?",
+      "topic": "Self Introduction",
+      "speaker": "User"
+    },
+    {
+      "id": "memorableBirthday",
+      "title": "A Memorable Birthday",
+      "setting": "Write about a birthday celebration that left a lasting impression. Who was there? What special activities took place? How did you feel during the event?",
+      "topic": "Celebrate a memorable birthday",
+      "speaker": "User"
+    },
+    {
+      "id": "planningATrip",
+      "title": "Planning a Trip",
+      "setting": "Describe how you plan a vacation or a weekend getaway. Where would you like to go and why? How do you prepare and pack for the journey?",
+      "topic": "Plan a trip",
+      "speaker": "User"
+    },
+    {
+      "id": "favoriteFood",
+      "title": "My Favorite Food",
+      "setting": "Talk about your favorite food. What is it, and how is it made or served? Why do you enjoy it so much, and do you have any special memories associated with it?",
+      "topic": "Discuss your favorite food",
+      "speaker": "User"
+    },
+    {
+      "id": "dayAtThePark",
+      "title": "A Day at the Park",
+      "setting": "Write about a relaxing day spent in a park. Describe the scenery, the activities you engaged in, and any interesting encounters you had.",
+      "topic": "Describe a day at the park",
+      "speaker": "User"
+    },
+    {
+      "id": "dailyRoutine",
+      "title": "My Daily Routine",
+      "setting": "Provide a detailed account of your daily routine. What do you do from morning to evening? How does your routine help you manage your day?",
+      "topic": "Describe your daily routine",
+      "speaker": "User"
+    }
+  ]

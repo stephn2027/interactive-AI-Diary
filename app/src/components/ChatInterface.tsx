@@ -1,4 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+} from 'react';
 import {
   Box,
   Button,
@@ -18,7 +23,12 @@ import BookIcon from '@mui/icons-material/BookOnlineSharp';
 import SendIcon from '@mui/icons-material/ArrowUpwardRounded'; // Arrow icon
 import MessageComponent from './MessageComponent';
 import ChatDescription from './ChatDescription';
-import { Message, Conversation, FeedbackResponse,LanguageKey } from '../util/types';
+import {
+  Message,
+  Conversation,
+  FeedbackResponse,
+  LanguageKey,
+} from '../util/types';
 import {
   compareDraftAPI,
   getDynamicFeedback,
@@ -29,7 +39,6 @@ import {
 import JournalDataDisplay from './JournalDataDisplay';
 import LanguageSelector from './LanguageSelector';
 import ConversationSelector from './ConversationSelector';
-
 
 const ChatInterface: React.FC = () => {
   // State declarations
@@ -101,9 +110,7 @@ const ChatInterface: React.FC = () => {
   useEffect(() => {
     const fetchInitialMessage = async () => {
       if (!selectedConversationId) return;
-      const selectedConv = conversations.find(
-        (conv: Conversation) => conv.id === selectedConversationId
-      );
+
       if (!selectedConv) return;
 
       try {
@@ -133,7 +140,12 @@ const ChatInterface: React.FC = () => {
       }
     };
     fetchInitialMessage();
-  }, [selectedConversationId, conversations]);
+  }, [selectedConversationId, selectedLanguage]);
+
+  const selectedConv = useMemo(
+    () => conversations.find((conv) => conv.id === selectedConversationId),
+    [conversations, selectedConversationId]
+  );
 
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
@@ -152,8 +164,8 @@ const ChatInterface: React.FC = () => {
   const handleSendMessage = async () => {
     if (currentInput.trim() === '') return;
     const userMessageContent = currentInput.trim();
-    setUserMessageCount(prev=>prev + 1);
-    const currentUserMessageCount = userMessageCount+1;
+    setUserMessageCount((prev) => prev + 1);
+    const currentUserMessageCount = userMessageCount + 1;
     // Append user's message
     const userMessage: Message = {
       id: Date.now(),
@@ -166,7 +178,7 @@ const ChatInterface: React.FC = () => {
     if (isFirstDraft) {
       setInitialDraft(userMessageContent);
     }
-    
+
     setCurrentInput('');
     if (inputRef.current) {
       inputRef.current.focus();
@@ -185,7 +197,7 @@ const ChatInterface: React.FC = () => {
         selectedConv!.setting,
         selectedConv!.topic,
         isFirstDraft,
-        selectedLanguage,
+        selectedLanguage
       );
       //append the feedback as system messages
       const feedbackMessage: Message = {
@@ -410,28 +422,29 @@ const ChatInterface: React.FC = () => {
       console.error('Error opening diary:', error);
     }
   };
-  const postSubmissionButtons = [
-    {
-      label: 'Journal',
-      icon: <BookIcon />,
-      onClick: handleOpenDiary,
-      disabled: isJournalButtonClicked,
-    },
-    {
-      label: 'Image',
-      icon: <ImageIcon />,
-      onClick: handleAddImage, // Define this handler
-    },
-    {
-      label: 'Story Book',
-      icon: <MailOutlineIcon />,
-      onClick: handleSendLetter, // Define this handler
-    },
-  ];
 
-  const selectedConv = conversations.find(
-    (conv) => conv.id === selectedConversationId
+  const postSubmissionButtons = useMemo(
+    () => [
+      {
+        label: 'Journal',
+        icon: <BookIcon />,
+        onClick: handleOpenDiary,
+        disabled: isJournalButtonClicked,
+      },
+      {
+        label: 'Image',
+        icon: <ImageIcon />,
+        onClick: handleAddImage, // Define this handler
+      },
+      {
+        label: 'Story Book',
+        icon: <MailOutlineIcon />,
+        onClick: handleSendLetter, // Define this handler
+      },
+    ],
+    [isJournalButtonClicked]
   );
+
   const { title } = selectedConv || {};
   const isInputDisabled = isFinalDraftSubmitted || loading;
 
@@ -556,7 +569,10 @@ const ChatInterface: React.FC = () => {
       {/* Journal Results Displayed After Hints */}
       {isJournalButtonClicked && journalData && (
         // <JournalView journalData={journalData}/>
-        <JournalDataDisplay journalData={journalData} language={selectedLanguage as LanguageKey} />
+        <JournalDataDisplay
+          journalData={journalData}
+          language={selectedLanguage as LanguageKey}
+        />
       )}
       {/* Display Image */}
       {imageURL && (
