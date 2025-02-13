@@ -1,32 +1,44 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
-import { styled } from '@mui/system';
+import { Box, Typography } from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 
 interface ChatDescriptionProps {
   title: string;
 }
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3, 4),
-  background: `linear-gradient(135deg, ${theme.palette.primary.light} 30%, ${theme.palette.primary.main} 90%)`,
-  color: theme.palette.common.white,
-  boxShadow: '0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)',
-  borderRadius: theme.shape.borderRadius * 2,
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
-}));
-
 const ChatDescription: React.FC<ChatDescriptionProps> = ({ title }) => {
   return (
-    <Box sx={{ mb: 4 }}>
-      <StyledPaper>
-        <ChatBubbleOutlineIcon fontSize="large" />
-        <Typography variant="h4" component="h1" fontWeight="bold" letterSpacing={0.5}>
-          {title}
-        </Typography>
-      </StyledPaper>
+    <Box
+      sx={{
+        width: '100%',
+        py: 0,
+        px: 3,
+        mb:2,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        background: 'transparent', // blend with parent background
+      }}
+    >
+      <ChatBubbleOutlineIcon sx={{ fontSize: 40, color: 'primary.main', mb: 0 }} />
+      <Typography
+        variant="h5"
+        component="h1"
+        fontWeight="bold"
+        align="center"
+        sx={{ mb: 1 }}
+      >
+        Hi, I'm your personal writing assistant.
+      </Typography>
+      <Typography
+        variant="body1"
+        color="text.secondary"
+        align="center"
+        sx={{ maxWidth: 600 }}
+      >
+        I'm here to help you craft outstanding content on the topic "{title}" today.
+        Let’s get started on creating something amazing!
+      </Typography>
     </Box>
   );
 };

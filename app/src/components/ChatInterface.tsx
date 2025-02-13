@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-} from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -73,6 +68,7 @@ const ChatInterface: React.FC = () => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Select the current conversation
+
   useEffect(() => {
     const fetchConversationData = async () => {
       // Fetch conversation data based on the selected language
@@ -80,7 +76,8 @@ const ChatInterface: React.FC = () => {
         const fetchedConversations = await getConversations(selectedLanguage);
         setConversations(fetchedConversations);
         if (fetchedConversations.length > 0) {
-          setSelectedConversationId(fetchedConversations[0].id);
+          const firstConv = fetchedConversations[0];
+          setSelectedConversationId(firstConv.id);
         }
       } catch (error) {
         console.error('Error fetching conversations:', error);
@@ -106,18 +103,23 @@ const ChatInterface: React.FC = () => {
     setShowPostSubmissionButtons(false);
     setUserMessageCount(0);
   };
+  const selectedConv = useMemo(
+    () => conversations.find((conv) => conv.id === selectedConversationId),
+    [conversations, selectedConversationId]
+  );
+  
   // Initialize conversation with dynamic system message
   useEffect(() => {
     const fetchInitialMessage = async () => {
-      if (!selectedConversationId) return;
-
-      if (!selectedConv) return;
+      if (!selectedConversationId || messages.length > 0) return;
+      const conv = conversations.find((c) => c.id === selectedConversationId);
+      if (!conv) return;
 
       try {
         setLoading(true);
         const systemMessageData = await initializeConversation(
-          selectedConv.topic,
-          selectedConv.setting,
+          conv.topic,
+          conv.setting,
           selectedLanguage
         );
         const systemMessage: Message = {
@@ -142,11 +144,7 @@ const ChatInterface: React.FC = () => {
     fetchInitialMessage();
   }, [selectedConversationId, selectedLanguage]);
 
-  const selectedConv = useMemo(
-    () => conversations.find((conv) => conv.id === selectedConversationId),
-    [conversations, selectedConversationId]
-  );
-
+  
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
     if (endOfMessagesRef.current) {
@@ -384,12 +382,12 @@ const ChatInterface: React.FC = () => {
       }
       // call the api to generate image
       console.log('Handle add image has been clicked');
-      const data = await generateImageAPI(userFinalDraft);
-      if (data && data.success && data.imageUrl) {
-        setImageURL(data.imageUrl);
-      } else {
-        console.error('Unable to retrieve image URL from serverless function');
-      }
+      // const data = await generateImageAPI(userFinalDraft);
+      // if (data && data.success && data.imageUrl) {
+      //   setImageURL(data.imageUrl);
+      // } else {
+      //   console.error('Unable to retrieve image URL from serverless function');
+      // }
     } catch (error) {
       console.error('Error adding image:', error);
       // Optionally, add error handling messages here
@@ -450,7 +448,7 @@ const ChatInterface: React.FC = () => {
 
   return (
     <Box
-      sx={{ display: 'flex', flexDirection: 'column', height: '100%', mb: 6 }}
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%',maxHeight:'100vh', mb:6 }}
     >
       {/* Chat Description */}
       {selectedConv && <ChatDescription title={title || ''} />}
@@ -494,7 +492,7 @@ const ChatInterface: React.FC = () => {
               gap: 2,
               mt: 2,
               mb: 2,
-              ml: 6,
+              ml: 4,
               justifyContent: 'flex-start',
             }}
           >
@@ -506,6 +504,11 @@ const ChatInterface: React.FC = () => {
                 startIcon={button.icon}
                 onClick={button.onClick}
                 disabled={button.disabled || false}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: '20px',
+                  boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
+                }}
               >
                 {button.label}
               </Button>
@@ -524,7 +527,7 @@ const ChatInterface: React.FC = () => {
               gap: 2,
               mt: 2,
               mb: 2,
-              ml: 6,
+              ml: 4,
               justifyContent: 'flex-start',
             }}
           >
@@ -533,6 +536,7 @@ const ChatInterface: React.FC = () => {
               color="primary"
               onClick={handleFinalSubmission}
               startIcon={<SendIcon />}
+              sx={{ textTransform: 'none', borderRadius: '20px' }}
             >
               Submit Final Draft
             </Button>
@@ -645,6 +649,7 @@ const ChatInterface: React.FC = () => {
               sx: {
                 backgroundColor: '#ffffff',
                 borderRadius: '20px',
+                boxShadow: '0px 2px 8px rgba(0,0,0,0.1)',
               },
             }}
             sx={{
