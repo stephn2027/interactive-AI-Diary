@@ -158,6 +158,26 @@ const ChatInterface: React.FC = () => {
     }
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (showPostSubmissionButtons || allCriteriaMet) {
+      scrollToBottom();
+    }
+  }, [showPostSubmissionButtons, allCriteriaMet]);
+
+  // Auto-scroll when an image is rendered
+  useEffect(() => {
+    if (imageURL) {
+      scrollToBottom();
+    }
+  }, [imageURL]);
+
+  // Optional: Auto-scroll when the journal data is displayed
+  useEffect(() => {
+    if (isJournalButtonClicked && journalData) {
+      scrollToBottom();
+    }
+  }, [isJournalButtonClicked, journalData]);
   // Handler for sending a message
   const handleSendMessage = async () => {
     if (currentInput.trim() === '') return;
@@ -326,6 +346,7 @@ const ChatInterface: React.FC = () => {
     }
     setIsFinalDraftSubmitted(true);
     setShowPostSubmissionButtons(true);
+    scrollToBottom();
   };
 
   const handleReviseFinalDraft = () => {
@@ -382,12 +403,12 @@ const ChatInterface: React.FC = () => {
       }
       // call the api to generate image
       console.log('Handle add image has been clicked');
-      // const data = await generateImageAPI(userFinalDraft);
-      // if (data && data.success && data.imageUrl) {
-      //   setImageURL(data.imageUrl);
-      // } else {
-      //   console.error('Unable to retrieve image URL from serverless function');
-      // }
+      const data = await generateImageAPI(userFinalDraft);
+      if (data && data.success && data.imageUrl) {
+        setImageURL(data.imageUrl);
+      } else {
+        console.error('Unable to retrieve image URL from serverless function');
+      }
     } catch (error) {
       console.error('Error adding image:', error);
       // Optionally, add error handling messages here
@@ -412,6 +433,10 @@ const ChatInterface: React.FC = () => {
   };
   // Handler for opening the diary/journal
   const handleOpenDiary = async () => {
+    if (!initialDraft || !userFinalDraft) {
+      console.error("Cannot open diary because initial/final draft is missing.");
+      return;
+    }
     try {
       await initiateDraftComparison(initialDraft, userFinalDraft);
       setIsJournalButtonCliked(true);
@@ -421,8 +446,7 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  const postSubmissionButtons = useMemo(
-    () => [
+  const postSubmissionButtons =  [
       {
         label: 'Journal',
         icon: <BookIcon />,
@@ -439,9 +463,9 @@ const ChatInterface: React.FC = () => {
         icon: <MailOutlineIcon />,
         onClick: handleSendLetter, // Define this handler
       },
-    ],
-    [isJournalButtonClicked]
-  );
+    ];
+    
+
 
   const { title } = selectedConv || {};
   const isInputDisabled = isFinalDraftSubmitted || loading;
@@ -473,6 +497,8 @@ const ChatInterface: React.FC = () => {
           backgroundColor: '#f5f5f5',
           borderRadius: 2,
           mb: 2,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {messages.map((message) => (
@@ -491,8 +517,9 @@ const ChatInterface: React.FC = () => {
               display: 'flex',
               gap: 2,
               mt: 2,
-              mb: 2,
+              mb: 8,
               ml: 4,
+              pb:2,
               justifyContent: 'flex-start',
             }}
           >
@@ -505,6 +532,7 @@ const ChatInterface: React.FC = () => {
                 onClick={button.onClick}
                 disabled={button.disabled || false}
                 sx={{
+  
                   textTransform: 'none',
                   borderRadius: '20px',
                   boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
@@ -526,7 +554,7 @@ const ChatInterface: React.FC = () => {
               display: 'flex',
               gap: 2,
               mt: 2,
-              mb: 2,
+              mb: 8,
               ml: 4,
               justifyContent: 'flex-start',
             }}
@@ -550,6 +578,40 @@ const ChatInterface: React.FC = () => {
             </Button>
           </Box>
         </Collapse>
+        {/* Journal Results Displayed After Hints */}
+      {isJournalButtonClicked && journalData && (
+        // <JournalView journalData={journalData}/>
+        <Box sx={{ mt: 10 }}>
+        <JournalDataDisplay
+          journalData={journalData}
+          language={selectedLanguage as LanguageKey}
+        />
+        </Box>
+      )}
+      {/* Display Image */}
+      {imageURL && (
+        <Box
+          sx={{
+            mx: 'auto',
+            mt: 2,
+            maxWidth: '90%',
+            width: { xs: '100%', sm: '80%', md: '60%' }, 
+            height: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Card>
+            <CardMedia
+              component="img"
+              image={imageURL}
+              alt="Generated Image"
+              sx={{ objectFit: 'contain', maxHeight: '60vh',width:'100%' }}
+            />
+          </Card>
+        </Box>
+      )}
+
         <div ref={endOfMessagesRef} />
         {loading && !isJournalButtonClicked && (
           <MessageComponent
@@ -562,6 +624,7 @@ const ChatInterface: React.FC = () => {
           />
         )}
       </Box>
+
       {(isFeedbackLoading || postSubmissionLoading) && (
         <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
           <Typography variant="body2" color="textSecondary">
@@ -570,37 +633,7 @@ const ChatInterface: React.FC = () => {
           <CircularProgress size={20} sx={{ ml: 1 }} />
         </Box>
       )}
-      {/* Journal Results Displayed After Hints */}
-      {isJournalButtonClicked && journalData && (
-        // <JournalView journalData={journalData}/>
-        <JournalDataDisplay
-          journalData={journalData}
-          language={selectedLanguage as LanguageKey}
-        />
-      )}
-      {/* Display Image */}
-      {imageURL && (
-        <Box
-          sx={{
-            mx: 'auto',
-            mt: 2,
-            maxWidth: '100%',
-            height: 'auto',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <Card>
-            <CardMedia
-              component="img"
-              image={imageURL}
-              alt="Generated Image"
-              sx={{ objectFit: 'contain' }}
-            />
-          </Card>
-        </Box>
-      )}
-
+      
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
       {!isFinalDraftSubmitted && (

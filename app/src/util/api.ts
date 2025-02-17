@@ -7,7 +7,7 @@ import chinese from '../assets/conversations/chinese.json';
 import spanish from '../assets/conversations/spanish.json';
 import french from '../assets/conversations/french.json';
 import { Conversation } from './types';
-import { c } from 'vite/dist/node/types.d-aGj9QkWt';
+
 
 const dev = true;
 const BASE_URL = dev
