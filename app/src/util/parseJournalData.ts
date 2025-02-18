@@ -1,34 +1,38 @@
 export interface ParsedJournalDataProps {
-    firstDraft: string;
-    revisedDraft: string;
-    explanations: { [key: string]: string };
-  }
+  firstDraft: string;
+  revisedDraft: string;
+  explanations: { [key: string]: string };
+}
+
+export const parseJournalData = (journalData: string): ParsedJournalDataProps => {
+  // Consolidated RegEx to capture firstDraft, revisedDraft, and explanations
+  const regex = /First Draft:\s*"([\s\S]*?)"\s*Revised Draft(?: with highlighted improvements)?:\s*"([\s\S]*?)"\s*Explanations for Improvements:\s*([\s\S]*)/i;
   
-  export const parseJournalData = (journalData: string): ParsedJournalDataProps => {
-    const firstDraftRegex = /First Draft:\s*"([^"]*)"/i;
-    const revisedDraftRegex = /Revised Draft(?: with highlighted improvements)?:\s*"([^"]*)"/i;
-    const explanationsRegex = /Explanations for Improvements:\s*([\s\S]*)/i;
+  const match = journalData.match(regex);
   
-    const firstDraftMatch = journalData.match(firstDraftRegex);
-    const revisedDraftMatch = journalData.match(revisedDraftRegex);
-    const explanationsMatch = journalData.match(explanationsRegex);
-  
-    const firstDraft = firstDraftMatch ? firstDraftMatch[1].trim() : '';
-    const revisedDraft = revisedDraftMatch ? revisedDraftMatch[1].trim() : '';
-    const explanationsText = explanationsMatch ? explanationsMatch[1].trim() : '';
-  
-    const explanations: { [key: string]: string } = {};
-    const explanationRegex = /^\d+\.\s*\*(.+?)\*:\s*(.+)$/gm;
-    let match;
-    while ((match = explanationRegex.exec(explanationsText)) !== null) {
-      const key = match[1].trim();
-      const value = match[2].trim();
-      explanations[key] = value;
-    }
-  
+  if (!match) {
+    console.error('Failed to parse journal data');
     return {
-      firstDraft,
-      revisedDraft,
-      explanations,
+      firstDraft: '',
+      revisedDraft: '',
+      explanations: {},
     };
+  }
+
+  const [_, firstDraft, revisedDraft, explanationsText] = match;
+  
+  const explanations: { [key: string]: string } = {};
+  const explanationRegex = /^\d+\.\s*\*(.+?)\*:\s*(.+)$/gm;
+  let excMatch;
+  while ((excMatch = explanationRegex.exec(explanationsText)) !== null) {
+    const key = excMatch[1].trim();
+    const value = excMatch[2].trim();
+    explanations[key] = value;
+  }
+
+  return {
+    firstDraft: firstDraft.trim(),
+    revisedDraft: revisedDraft.trim(),
+    explanations,
   };
+};

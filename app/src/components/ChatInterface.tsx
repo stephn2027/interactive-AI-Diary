@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import {
   Box,
   Button,
@@ -58,6 +58,8 @@ const ChatInterface: React.FC = () => {
   const [journalData, setJournalData] = useState<string | null>(null);
   const [isJournalButtonClicked, setIsJournalButtonCliked] =
     useState<boolean>(false);
+  const [isImageButtonClicked, setIsImageButtonClicked] =
+    useState<boolean>(false);
   const [postSubmissionLoading, setPostSubmissionLoading] =
     useState<boolean>(false);
   const [showPostSubmissionButtons, setShowPostSubmissionButtons] =
@@ -93,6 +95,7 @@ const ChatInterface: React.FC = () => {
     setInitialDraft(null);
     setUserFinalDraft(null);
     setIsJournalButtonCliked(false);
+    setIsImageButtonClicked(false);
     setJournalData(null);
     setAllCriteriaMet(false);
     setLoading(false);
@@ -107,9 +110,10 @@ const ChatInterface: React.FC = () => {
     () => conversations.find((conv) => conv.id === selectedConversationId),
     [conversations, selectedConversationId]
   );
-  
+
   // Initialize conversation with dynamic system message
   useEffect(() => {
+    let isCancelled = false;
     const fetchInitialMessage = async () => {
       if (!selectedConversationId || messages.length > 0) return;
       const conv = conversations.find((c) => c.id === selectedConversationId);
@@ -122,6 +126,7 @@ const ChatInterface: React.FC = () => {
           conv.setting,
           selectedLanguage
         );
+        if (isCancelled) return;
         const systemMessage: Message = {
           id: Date.now(),
           role: 'System',
@@ -142,9 +147,11 @@ const ChatInterface: React.FC = () => {
       }
     };
     fetchInitialMessage();
+    return () => {
+      isCancelled = true;
+    };
   }, [selectedConversationId, selectedLanguage]);
 
-  
   // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
     if (endOfMessagesRef.current) {
@@ -159,25 +166,13 @@ const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (showPostSubmissionButtons || allCriteriaMet) {
       scrollToBottom();
     }
-  }, [showPostSubmissionButtons, allCriteriaMet]);
+  }, [showPostSubmissionButtons, allCriteriaMet,messages,imageURL,isJournalButtonClicked,journalData]);
 
-  // Auto-scroll when an image is rendered
-  useEffect(() => {
-    if (imageURL) {
-      scrollToBottom();
-    }
-  }, [imageURL]);
-
-  // Optional: Auto-scroll when the journal data is displayed
-  useEffect(() => {
-    if (isJournalButtonClicked && journalData) {
-      scrollToBottom();
-    }
-  }, [isJournalButtonClicked, journalData]);
+  
   // Handler for sending a message
   const handleSendMessage = async () => {
     if (currentInput.trim() === '') return;
@@ -406,6 +401,7 @@ const ChatInterface: React.FC = () => {
       const data = await generateImageAPI(userFinalDraft);
       if (data && data.success && data.imageUrl) {
         setImageURL(data.imageUrl);
+        setIsImageButtonClicked(true);
       } else {
         console.error('Unable to retrieve image URL from serverless function');
       }
@@ -432,9 +428,11 @@ const ChatInterface: React.FC = () => {
     }
   };
   // Handler for opening the diary/journal
-  const handleOpenDiary = async () => {
+  const handleOpenJournal = async () => {
     if (!initialDraft || !userFinalDraft) {
-      console.error("Cannot open diary because initial/final draft is missing.");
+      console.error(
+        'Cannot open diary because initial/final draft is missing.'
+      );
       return;
     }
     try {
@@ -446,33 +444,38 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  const postSubmissionButtons =  [
-      {
-        label: 'Journal',
-        icon: <BookIcon />,
-        onClick: handleOpenDiary,
-        disabled: isJournalButtonClicked,
-      },
-      {
-        label: 'Image',
-        icon: <ImageIcon />,
-        onClick: handleAddImage, // Define this handler
-      },
-      {
-        label: 'Story Book',
-        icon: <MailOutlineIcon />,
-        onClick: handleSendLetter, // Define this handler
-      },
-    ];
-    
-
+  const postSubmissionButtons = [
+    {
+      label: 'Journal',
+      icon: <BookIcon />,
+      onClick: handleOpenJournal,
+      disabled: isJournalButtonClicked,
+    },
+    {
+      label: 'Image',
+      icon: <ImageIcon />,
+      onClick: handleAddImage,
+      disabled: isImageButtonClicked, // Define this handler
+    },
+    {
+      label: 'Story Book',
+      icon: <MailOutlineIcon />,
+      onClick: handleSendLetter, // Define this handler
+    },
+  ];
 
   const { title } = selectedConv || {};
   const isInputDisabled = isFinalDraftSubmitted || loading;
 
   return (
     <Box
-      sx={{ display: 'flex', flexDirection: 'column', height: '100%',maxHeight:'100vh', mb:6 }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        maxHeight: '100vh',
+        mb: 6,
+      }}
     >
       {/* Chat Description */}
       {selectedConv && <ChatDescription title={title || ''} />}
@@ -510,7 +513,9 @@ const ChatInterface: React.FC = () => {
         <Collapse
           in={showPostSubmissionButtons}
           timeout={{ enter: 500, exit: 300 }}
-          sx={{ transition: 'height 500ms ease-in-out' }}
+          onEntered={scrollToBottom}
+          sx={{ transition: 'height 500ms ease-in-out',mb: 8, }}
+          
         >
           <Box
             sx={{
@@ -519,7 +524,6 @@ const ChatInterface: React.FC = () => {
               mt: 2,
               mb: 8,
               ml: 4,
-              pb:2,
               justifyContent: 'flex-start',
             }}
           >
@@ -532,7 +536,6 @@ const ChatInterface: React.FC = () => {
                 onClick={button.onClick}
                 disabled={button.disabled || false}
                 sx={{
-  
                   textTransform: 'none',
                   borderRadius: '20px',
                   boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
@@ -547,7 +550,9 @@ const ChatInterface: React.FC = () => {
         <Collapse
           in={allCriteriaMet && !isFinalDraftSubmitted}
           timeout={{ enter: 500, exit: 300 }}
+          onEntered={scrollToBottom}
           sx={{ transition: 'height 500ms ease-in-out' }}
+         
         >
           <Box
             sx={{
@@ -579,40 +584,39 @@ const ChatInterface: React.FC = () => {
           </Box>
         </Collapse>
         {/* Journal Results Displayed After Hints */}
-      {isJournalButtonClicked && journalData && (
-        // <JournalView journalData={journalData}/>
-        <Box sx={{ mt: 10 }}>
-        <JournalDataDisplay
-          journalData={journalData}
-          language={selectedLanguage as LanguageKey}
-        />
-        </Box>
-      )}
-      {/* Display Image */}
-      {imageURL && (
-        <Box
-          sx={{
-            mx: 'auto',
-            mt: 2,
-            maxWidth: '90%',
-            width: { xs: '100%', sm: '80%', md: '60%' }, 
-            height: 'auto',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <Card>
-            <CardMedia
-              component="img"
-              image={imageURL}
-              alt="Generated Image"
-              sx={{ objectFit: 'contain', maxHeight: '60vh',width:'100%' }}
+        {isJournalButtonClicked && journalData && (
+          // <JournalView journalData={journalData}/>
+          <Box sx={{ mt: 10 }}>
+            <JournalDataDisplay
+              journalData={journalData}
+              language={selectedLanguage as LanguageKey}
             />
-          </Card>
-        </Box>
-      )}
+          </Box>
+        )}
+        {/* Display Image */}
+        {imageURL && (
+          <Box
+            sx={{
+              mx: 'auto',
+              mt: 2,
+              maxWidth: '90%',
+              width: { xs: '100%', sm: '80%', md: '60%' },
+              height: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <Card>
+              <CardMedia
+                component="img"
+                image={imageURL}
+                alt="Generated Image"
+                sx={{ objectFit: 'contain', maxHeight: '60vh', width: '100%' }}
+              />
+            </Card>
+          </Box>
+        )}
 
-        <div ref={endOfMessagesRef} />
         {loading && !isJournalButtonClicked && (
           <MessageComponent
             message={{
@@ -623,6 +627,7 @@ const ChatInterface: React.FC = () => {
             isLoading={true}
           />
         )}
+        <div ref={endOfMessagesRef} />
       </Box>
 
       {(isFeedbackLoading || postSubmissionLoading) && (
@@ -633,7 +638,7 @@ const ChatInterface: React.FC = () => {
           <CircularProgress size={20} sx={{ ml: 1 }} />
         </Box>
       )}
-      
+
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
       {!isFinalDraftSubmitted && (
