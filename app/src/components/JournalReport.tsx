@@ -74,15 +74,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000000',
     marginBottom: 10,
+    display: 'flex',
     flexDirection: 'row',
     fontWeight:'semibold',
   },
   listItemKey: {
     fontWeight: 'bold',
     color: '#0072C6',
-    width:'40%',
+    maxWidthwidth:'40%',
     flexWrap:'wrap',
-    
+    flex: 0.5,
   },
   listItemValue: {
     flex: 1,

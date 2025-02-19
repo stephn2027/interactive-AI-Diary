@@ -43,20 +43,21 @@ provider:
         - "arn:aws:s3:::interactive-diary-assets-${env:AWS_REGION_ID}"
         - "*" 
 
-httpApi:
-  cors:
-    allowedOrigins:
-      - 'https://localhost:5173'
-      - 'https://dzxb9j1vqhtlm.cloudfront.net'  # Replace with your actual frontend domain
-    allowedHeaders:
-      - Content-Type
-      - Authorization
-    allowedMethods:
-      - OPTIONS
-      - GET
-      - POST
-      - PUT
-      - DELETE
+  httpApi:
+    cors:
+      allowedOrigins:
+        - 'http://localhost:5173'
+        - 'https://localhost:5173'
+        - 'https://dzxb9j1vqhtlm.cloudfront.net'  # Replace with your actual frontend domain
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - OPTIONS
+        - GET
+        - POST
+        - PUT
+        - DELETE
 
 functions:
   dynamicGuidance:

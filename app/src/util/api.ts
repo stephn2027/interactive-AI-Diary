@@ -9,10 +9,11 @@ import french from '../assets/conversations/french.json';
 import { Conversation } from './types';
 
 
+
 const dev = true;
 const BASE_URL = dev
-  ? 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/dev'
-  : 'https://grdh0lornb.execute-api.ap-northeast-1.amazonaws.com/beta';
+  ? 'https://3wb00zuvzb.execute-api.ap-northeast-1.amazonaws.com/dev'
+  : 'https://3wb00zuvzb.execute-api.ap-northeast-1.amazonaws.com/beta';
 
 // const SAVE_AUDIO_URL = 'https://kkunnx02n7.execute-api.ap-northeast-1.amazonaws.com/dev';
 

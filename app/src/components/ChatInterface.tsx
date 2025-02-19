@@ -514,7 +514,7 @@ const ChatInterface: React.FC = () => {
           in={showPostSubmissionButtons}
           timeout={{ enter: 500, exit: 300 }}
           onEntered={scrollToBottom}
-          sx={{ transition: 'height 500ms ease-in-out',mb: 8, }}
+          sx={{ transition: 'height 500ms ease-in-out' }}
           
         >
           <Box
@@ -598,7 +598,7 @@ const ChatInterface: React.FC = () => {
           <Box
             sx={{
               mx: 'auto',
-              mt: 2,
+              mt: 10,
               maxWidth: '90%',
               width: { xs: '100%', sm: '80%', md: '60%' },
               height: 'auto',
