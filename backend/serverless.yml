@@ -68,6 +68,7 @@ functions:
           method: post
           path: dynamicguidance
           cors: true
+          timeout: 30
   generateImage:
     handler: generateImage.handler
     role: arn:aws:iam::105150981739:role/service-role/generateAudio
@@ -84,7 +85,14 @@ functions:
           method: post
           path: compare
           cors: true
-
+  generateAudio:
+    handler: generateAudio.handler
+    role: arn:aws:iam::105150981739:role/service-role/generateAudio
+    events:
+      - http:
+          method: post
+          path: generateaudio
+          cors: true
 plugins:
   - serverless-plugin-common-excludes
   - serverless-plugin-include-dependencies

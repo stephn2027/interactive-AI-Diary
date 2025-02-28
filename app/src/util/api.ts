@@ -1,3 +1,4 @@
+import { time } from 'motion';
 import axios from 'axios';
 import { FeedbackResponse } from './types';
 import english from '../assets/conversations/english.json';
@@ -7,6 +8,7 @@ import chinese from '../assets/conversations/chinese.json';
 import spanish from '../assets/conversations/spanish.json';
 import french from '../assets/conversations/french.json';
 import { Conversation } from './types';
+
 
 
 
@@ -64,7 +66,7 @@ export const initializeConversation = async (
       topic,
       setting,
       language,
-    });
+    },{timeout:29000,headers:{'Content-Type':'application/json',} });
     if (response.status === 200) {
       return response.data; // Assuming the API returns { id, role, content }
     } else {
@@ -77,9 +79,10 @@ export const initializeConversation = async (
 };
 
 /**
- * Fetches feedback for a given draft using the dynamicGuidance API.
- * @param draftText - The user's draft text.
- * @returns A promise that resolves to a FeedbackResponse.
+ * Fetches the next system message based on the user's input.
+ * @param conversationId - The conversation ID.
+ * @param userMessage - The user's message.
+ * @returns A promise that resolves to the next system message.
  */
 export const getDynamicFeedback = async (
   draftText: string,
@@ -97,7 +100,7 @@ export const getDynamicFeedback = async (
       setting,
       isFirstDraft,
       language,
-    });
+    },{headers:{'Content-Type':'application/json'} });
     if (response.status === 200) {
       return response.data as FeedbackResponse;
     } else {
@@ -114,42 +117,6 @@ export const getDynamicFeedback = async (
       console.error('Unexpected error:', error);
     }
     throw new Error('Error getting dynamic feedback');
-  }
-};
-
-export const generateAudio = async (
-  text: string,
-  language: string,
-  id: string,
-  uid: string,
-  index: number
-) => {
-  try {
-    // Prepare the request payload
-    const payload = {
-      text: text,
-      language: language,
-      id: id,
-      index: index,
-      uid: uid,
-    };
-
-    // Send the request to the server
-    const response = await axios.post(`${BASE_URL}/generateaudio`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.data && response.data.success) {
-      return response;
-    } else {
-      console.error('Unexpected response format from /saveaudio endpoint.');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error saving audio file:', error);
-    return null;
   }
 };
 
@@ -182,7 +149,25 @@ export const generateImageAPI = async (finalDraft: string) => {
     throw error;
   }
 };
-
+export const generateAudio = async (draft:string,lang:string,uuid:string) => {
+  const payload = {
+    draft: draft,
+    lang: lang,
+    uuid: uuid,
+  }
+  try {
+    const response = await axios.post(`${BASE_URL}/generateaudio`, payload,{headers:{'Content-Type':'application/json'} });
+    if (response.data && response.data.success) {
+      return response;
+    } else {
+      console.error('Unexpected response format from /generateaudio endpoint.');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error generating audio:', error);
+    throw error;
+  }
+}
 export const getConversations = async (
   language: string
 ): Promise<Conversation[]> => {

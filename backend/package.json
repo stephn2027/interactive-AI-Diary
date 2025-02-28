@@ -11,8 +11,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "aws-sdk": "^2.1692.0",
     "axios": "^1.7.8",
     "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2",
     "openai": "^4.77.3",
     "serverless-plugin-common-excludes": "^4.0.0",
     "serverless-plugin-include-dependencies": "^6.1.1",

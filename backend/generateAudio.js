@@ -13,28 +13,122 @@ const headers = {
   'Access-Control-Allow-Methods': 'OPTIONS,POST',
 };
 
-const GLOBAL_DEFAULT_SPEECH_ID = 'Ha21jUwaMwdgQvqNslSM';
+const GLOBAL_DEFAULT_SPEECH_ID = 'pMsXgVXv3BLzUgSXRplE';
 
-
+const speakerConfig = {
+  ja: {
+    speakers: {
+      'Japanese': 'RBnMinrYKeccY3vaUxlZ',
+    },
+    defaultSpeaker: 'Japanese',
+    defaultSpeechID: 'RBnMinrYKeccY3vaUxlZ',
+  },
+  en: {
+    speakers: {
+      'English': 'pMsXgVXv3BLzUgSXRplE',
+    },
+    defaultSpeaker: 'English',
+    defaultSpeechID: 'pMsXgVXv3BLzUgSXRplE',
+  },
+  es: {
+    speakers: {
+      'Spanish': 'GwtqU7RCQKrjzJ0dGhqT',
+    },
+    defaultSpeaker: 'Spanish',
+    defaultSpeechID: 'GwtqU7RCQKrjzJ0dGhqT',
+  },
+  fr: {
+    speakers: {
+      'French': 'aQROLel5sQbj1vuIVi6B',
+    },
+    defaultSpeaker: 'French',
+    defaultSpeechID: 'aQROLel5sQbj1vuIVi6B',
+  },
+  zh: {
+    speakers: {
+      'Chinese': 'GgmlugwQ4LYXBbEXENWm',
+    },
+    defaultSpeaker: 'Chinese',
+    defaultSpeechID: 'GgmlugwQ4LYXBbEXENWm',
+  },
+  ko: {
+    speakers: {
+      'Korean': 'WqVy7827vjE2r3jWvbnP',
+    },
+    defaultSpeaker: 'Korean',
+    defaultSpeechID: 'WqVy7827vjE2r3jWvbnP',
+  },
+  it: {
+    speakers: {
+      'Italian': 'Ha21jUwaMwdgQvqNslSM',
+    },
+    defaultSpeaker: 'Italian',
+    defaultSpeechID: 'Ha21jUwaMwdgQvqNslSM',
+  },
+  de: {
+    speakers: {
+      'German': 'uvysWDLbKpA4XvpD3GI6',
+    },
+    defaultSpeaker: 'German',
+    defaultSpeechID: 'uvysWDLbKpA4XvpD3GI6',
+  },
+  
+}
 export const handler = async (event) => {
-  const { text, language, id, uid, index } = JSON.parse(event.body);
+  const { draft,lang, uuid } = JSON.parse(event.body);
 
   try {
+    if (
+      !draft ||
+      typeof draft !== 'string' ||
+      !lang ||
+      typeof lang !== 'string' ||
+      !uuid ||
+      typeof uuid !== 'string'
+    ) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          message: 'Missing required parameters.',
+        }),
+      };
+    }
+    const langConfig = speakerConfig[lang];
+    if (!langConfig) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          message: 'Invalid language.',
+        }),
+      };
+    }
+    let speechID;
+    if(langConfig){
+      const languageSettings = langConfig;
+      const speakers = languageSettings.speakers;
+      const defaultSpeaker = languageSettings.defaultSpeaker;
+      speechID = speakers[defaultSpeaker] || GLOBAL_DEFAULT_SPEECH_ID;
+    }
+   
+
     const options = {
       method: 'POST',
       headers: {
-        'xi-api-key': '5605310fb88414241a4324e9531ffb9c',
+        'xi-api-key': process.env.ELEVEN_LABS_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        text: text,
+        text: draft,
         model_id: 'eleven_multilingual_v2',
       }),
     };
 
-    let speechID = GLOBAL_DEFAULT_SPEECH_ID;
-    // Check if the language exists in the configuration
     
+    // Check if the language exists in the configuration
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${speechID}`,
@@ -42,21 +136,23 @@ export const handler = async (event) => {
     );
 
     if (!response.ok) {
-      throw new Error(`unexpected response ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to generate audio: ${errorText}`);
     }
-
-    const filePath = `generated/${uid}/${language}/${id}/audio-${index}.mp3`;
-
+    const timeStamp = new Date().getTime();
+    const filePath = `draftGenerated/${uuid}/${lang}/audio-${timeStamp}.mp3`;
+   
     const s3Params = {
       Bucket: BUCKET_NAME,
       Key: filePath,
       Body: response.body,
-      ACL: 'public-read',
+      
     };
 
     await s3.upload(s3Params).promise();
 
     const publicUrl = `${BASE_URL}/${filePath}`;
+    console.log(`Audio file uploaded successfully at ${publicUrl}`);
 
     return {
       statusCode: 200,

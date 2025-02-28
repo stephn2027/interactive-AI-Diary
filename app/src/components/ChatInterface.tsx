@@ -1,4 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+  CSSProperties,
+} from 'react';
 import {
   Box,
   Button,
@@ -30,10 +37,13 @@ import {
   generateImageAPI,
   getConversations,
   initializeConversation,
+  generateAudio,
 } from '../util/api';
 import JournalDataDisplay from './JournalDataDisplay';
 import LanguageSelector from './LanguageSelector';
 import ConversationSelector from './ConversationSelector';
+
+import AudioPlayerWithDownload from './AudioPlayerWithDownload';
 
 const ChatInterface: React.FC = () => {
   // State declarations
@@ -46,14 +56,15 @@ const ChatInterface: React.FC = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string>(
     conversations[0]?.id || ''
   );
+  const [conversationUuId, setConversationUuId] = useState<string | null>(null);
   const [isFeedbackLoading, setFeedbackLoading] = useState<boolean>(false);
   const [userMessageCount, setUserMessageCount] = useState<number>(0);
   const [userFinalDraft, setUserFinalDraft] = useState<string | null>(null);
   const [isFinalDraftSubmitted, setIsFinalDraftSubmitted] =
     useState<boolean>(false);
   // const [audioLoading, setAudioLoading] = useState<boolean>(false);
-  // const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  // const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [initialDraft, setInitialDraft] = useState<string | null>(null);
   const [journalData, setJournalData] = useState<string | null>(null);
   const [isJournalButtonClicked, setIsJournalButtonCliked] =
@@ -66,24 +77,31 @@ const ChatInterface: React.FC = () => {
     useState<boolean>(false);
   const [imageURL, setImageURL] = useState<string | null>(null);
   const [allCriteriaMet, setAllCriteriaMet] = useState<boolean>(false);
+  const [conversationLoading, setConversationLoading] =
+    useState<boolean>(false);
   // Refs
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
   // Select the current conversation
 
   useEffect(() => {
     const fetchConversationData = async () => {
       // Fetch conversation data based on the selected language
+      setConversationLoading(true);
       try {
         const fetchedConversations = await getConversations(selectedLanguage);
         setConversations(fetchedConversations);
         if (fetchedConversations.length > 0) {
           const firstConv = fetchedConversations[0];
           setSelectedConversationId(firstConv.id);
+          setConversationUuId(Date.now().toString());
         }
       } catch (error) {
         console.error('Error fetching conversations:', error);
         setConversations([]);
+      } finally {
+        setConversationLoading(false);
       }
     };
 
@@ -105,6 +123,7 @@ const ChatInterface: React.FC = () => {
     setIsFinalDraftSubmitted(false);
     setShowPostSubmissionButtons(false);
     setUserMessageCount(0);
+    setConversationLoading(false);
   };
   const selectedConv = useMemo(
     () => conversations.find((conv) => conv.id === selectedConversationId),
@@ -170,9 +189,15 @@ const ChatInterface: React.FC = () => {
     if (showPostSubmissionButtons || allCriteriaMet) {
       scrollToBottom();
     }
-  }, [showPostSubmissionButtons, allCriteriaMet,messages,imageURL,isJournalButtonClicked,journalData]);
+  }, [
+    showPostSubmissionButtons,
+    allCriteriaMet,
+    messages,
+    imageURL,
+    isJournalButtonClicked,
+    journalData,
+  ]);
 
-  
   // Handler for sending a message
   const handleSendMessage = async () => {
     if (currentInput.trim() === '') return;
@@ -327,6 +352,7 @@ const ChatInterface: React.FC = () => {
     const newConversationId = event.target.value as string;
     resetChatState();
     setSelectedConversationId(newConversationId);
+    setConversationUuId(Date.now().toString());
   };
   const handleLanguageChange = (event: SelectChangeEvent<string>) => {
     const newLanguage = event.target.value;
@@ -412,19 +438,41 @@ const ChatInterface: React.FC = () => {
       setPostSubmissionLoading(false); // Stop loading
     }
   };
-  // Handler for sending a letter
-  const handleSendLetter = async () => {
-    setPostSubmissionLoading(true); // Start loading
+  // Handler for generating audio
+  const handleAudioGeneration = async () => {
     try {
-      // TODO: Implement letter sending logic here
-      console.log('Send Letter button clicked');
-      // Simulate async operation
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log('Generate audio button clicked');
+      if (!userFinalDraft) {
+        console.error('User final draft is empty');
+        return;
+      }
+      await handleAudioGenerationAPI(userFinalDraft, selectedLanguage);
     } catch (error) {
-      console.error('Error sending letter:', error);
-      // Optionally, add error handling messages here
+      console.error('Error generating audio:', error);
+      // setAudioError('An error occurred during audio generation.');
+    }
+  };
+
+  const handleAudioGenerationAPI = async (draft: string, lang: string) => {
+    setPostSubmissionLoading(true);
+    try {
+      if (!conversationUuId) {
+        throw new Error('Conversation ID is not initialized');
+      }
+      const response = await generateAudio(draft, lang, conversationUuId);
+      const audioUrl = response?.data.url;
+      if (response && response.data && response.data.url) {
+        setAudioUrl(audioUrl);
+        console.log('Audio URL:', audioUrl);
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unknown error occurred';
+      setAudioError(errorMessage);
+      console.error('Error generating audio:', error);
+      // setAudioError('An error occurred during audio generation.');
     } finally {
-      setPostSubmissionLoading(false); // Stop loading
+      setPostSubmissionLoading(false);
     }
   };
   // Handler for opening the diary/journal
@@ -449,18 +497,19 @@ const ChatInterface: React.FC = () => {
       label: 'Journal',
       icon: <BookIcon />,
       onClick: handleOpenJournal,
-      disabled: isJournalButtonClicked,
+      disabled: isJournalButtonClicked || conversationLoading,
     },
     {
       label: 'Image',
       icon: <ImageIcon />,
       onClick: handleAddImage,
-      disabled: isImageButtonClicked, // Define this handler
+      disabled: isImageButtonClicked || conversationLoading, // Define this handler
     },
     {
-      label: 'Story Book',
+      label: 'Audio',
       icon: <MailOutlineIcon />,
-      onClick: handleSendLetter, // Define this handler
+      onClick: handleAudioGeneration,
+      disabled: !conversationUuId || conversationLoading,
     },
   ];
 
@@ -515,7 +564,6 @@ const ChatInterface: React.FC = () => {
           timeout={{ enter: 500, exit: 300 }}
           onEntered={scrollToBottom}
           sx={{ transition: 'height 500ms ease-in-out' }}
-          
         >
           <Box
             sx={{
@@ -552,7 +600,6 @@ const ChatInterface: React.FC = () => {
           timeout={{ enter: 500, exit: 300 }}
           onEntered={scrollToBottom}
           sx={{ transition: 'height 500ms ease-in-out' }}
-         
         >
           <Box
             sx={{
@@ -616,8 +663,27 @@ const ChatInterface: React.FC = () => {
             </Card>
           </Box>
         )}
+        {audioUrl && (
+          <Box
+            sx={{
+              mx: 'auto',
+              mt: 10,
+              maxWidth: '90%',
+              width: { xs: '100%', sm: '80%', md: '60%' },
+              height: 'auto',
+              display: 'inline-flex',
+              justifyContent: 'center',
+              borderRadius: '20px',
+            }}
+          >
+            <AudioPlayerWithDownload
+              audioUrl={audioUrl}
+              downloadFileName={conversations[0]?.topic || 'audio.mp3'}
+            />
+          </Box>
+        )}
 
-        {loading && !isJournalButtonClicked && (
+        {loading && !isJournalButtonClicked && !isFinalDraftSubmitted && (
           <MessageComponent
             message={{
               id: Date.now(),
@@ -638,7 +704,19 @@ const ChatInterface: React.FC = () => {
           <CircularProgress size={20} sx={{ ml: 1 }} />
         </Box>
       )}
-
+      {audioError && (
+        <Typography variant="body2" color="error">
+          {audioError}
+        </Typography>
+      )}
+      {conversationLoading && (
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" color="textSecondary">
+            Loading conversation details...
+          </Typography>
+          <CircularProgress size={20} sx={{ ml: 1 }} />
+        </Box>
+      )}
       {/* Input Field and Send Button */}
       {/* Input Field with Inline Send Button */}
       {!isFinalDraftSubmitted && (
